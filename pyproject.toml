@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "secureclaw"
+version = "1.2.0"
+description = "Cross-platform prompt injection scanner for AI tool users"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "Sparkry AI", email = "hello@sparkry.ai" },
+]
+keywords = ["security", "prompt-injection", "ai", "scanner", "cli"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "ruff>=0.4"]
+
+[project.scripts]
+secureclaw = "secureclaw.cli:main"
+
+[project.urls]
+Homepage = "https://secureclaw.sparkry.ai"
+Repository = "https://github.com/sparkst/secureclaw"
+Issues = "https://github.com/sparkst/secureclaw/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["secureclaw"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"secureclaw/rules/default_rules.json" = "secureclaw/rules/default_rules.json"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "PTH"]

@@ -1,0 +1,5 @@
+This is a perfectly safe document.
+It contains normal text about a software project.
+The team met on Tuesday to discuss the new feature rollout.
+Performance metrics show a 15% improvement over last quarter.
+Nothing suspicious here - just regular business content.

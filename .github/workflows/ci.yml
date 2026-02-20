@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Lint
+        run: ruff check secureclaw/ tests/
+
+      - name: Format check
+        run: ruff format --check secureclaw/ tests/
+
+  test:
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package
+        run: pip install -e ".[dev]"
+
+      - name: Run tests
+        run: python -m pytest tests/ -v --tb=short
+
+      - name: Verify CLI entry point
+        run: secureclaw --version
+
+      - name: Verify scan command (Unix)
+        run: secureclaw scan . --format json -o /dev/null || true
+        if: runner.os != 'Windows'
+
+      - name: Verify scan command (Windows)
+        run: secureclaw scan . --format json -o NUL || true
+        if: runner.os == 'Windows'
+
+      - name: Verify posture command
+        run: secureclaw posture || true
+
+      - name: Verify fix command (dry-run)
+        shell: bash
+        run: |
+          secureclaw scan tests/ --format json -o /tmp/test-report.json || true
+          secureclaw fix /tmp/test-report.json --tier all || true
+
+  standalone:
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build standalone
+        run: python tools/build_standalone.py
+
+      - name: Test standalone version
+        run: python dist/secureclaw.py --version
+
+      - name: Test standalone scan
+        run: python dist/secureclaw.py scan tests/ || true
+
+      - name: Upload standalone artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: secureclaw-standalone-${{ matrix.os }}
+          path: dist/secureclaw.py
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build wheel and sdist
+        run: python -m build
+
+      - name: Verify wheel contents
+        run: |
+          pip install dist/*.whl
+          secureclaw --version
+          python -c "from secureclaw.core.patterns import load_default_patterns; p = load_default_patterns(); print(f'Rules loaded: {len(p)}')"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
