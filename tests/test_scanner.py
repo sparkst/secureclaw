@@ -1,7 +1,6 @@
 """Tests for the file scanner."""
 
 import os
-from pathlib import Path
 
 from secureclaw.core.models import FileContext
 from secureclaw.core.scanner import (
@@ -168,66 +167,70 @@ class TestScanner:
 
 
 class TestClassifyFileContext:
-    """Tests for classify_file_context."""
+    """Tests for classify_file_context.
 
-    def test_claude_config_file(self):
-        path = Path("/project/.claude/config.json")
+    Uses tmp_path to build real cross-platform paths instead of hardcoded
+    Unix paths, ensuring tests pass on Windows.
+    """
+
+    def test_claude_config_file(self, tmp_path):
+        path = tmp_path / ".claude" / "config.json"
         assert classify_file_context(path) == FileContext.AI_CONFIG
 
-    def test_cursor_directory_file(self):
-        path = Path("/project/.cursor/settings.json")
+    def test_cursor_directory_file(self, tmp_path):
+        path = tmp_path / ".cursor" / "settings.json"
         assert classify_file_context(path) == FileContext.AI_CONFIG
 
-    def test_claude_md(self):
-        path = Path("/project/CLAUDE.md")
+    def test_claude_md(self, tmp_path):
+        path = tmp_path / "CLAUDE.md"
         assert classify_file_context(path) == FileContext.AI_CONFIG
 
-    def test_claude_local_md(self):
-        path = Path("/project/CLAUDE.local.md")
+    def test_claude_local_md(self, tmp_path):
+        path = tmp_path / "CLAUDE.local.md"
         assert classify_file_context(path) == FileContext.AI_CONFIG
 
-    def test_skill_md(self):
-        path = Path("/project/.claude/skills/test/SKILL.md")
+    def test_skill_md(self, tmp_path):
+        path = tmp_path / ".claude" / "skills" / "test" / "SKILL.md"
         assert classify_file_context(path) == FileContext.AI_CONFIG
 
-    def test_cursorrules(self):
-        path = Path("/project/.cursorrules")
+    def test_cursorrules(self, tmp_path):
+        path = tmp_path / ".cursorrules"
         assert classify_file_context(path) == FileContext.AI_CONFIG
 
-    def test_regular_python_file(self):
-        path = Path("/project/src/app.py")
+    def test_regular_python_file(self, tmp_path):
+        path = tmp_path / "src" / "app.py"
         assert classify_file_context(path) == FileContext.USER_CONTENT
 
-    def test_regular_markdown_file(self):
-        path = Path("/project/docs/README.md")
+    def test_regular_markdown_file(self, tmp_path):
+        path = tmp_path / "docs" / "README.md"
         assert classify_file_context(path) == FileContext.USER_CONTENT
 
-    def test_test_directory_file(self):
-        path = Path("/project/tests/test_main.py")
+    def test_test_directory_file(self, tmp_path):
+        path = tmp_path / "tests" / "test_main.py"
         assert classify_file_context(path) == FileContext.TEST_FIXTURE
 
-    def test_test_prefix_file(self):
-        path = Path("/project/src/test_utils.py")
+    def test_test_prefix_file(self, tmp_path):
+        path = tmp_path / "src" / "test_utils.py"
         assert classify_file_context(path) == FileContext.TEST_FIXTURE
 
-    def test_spec_file(self):
-        path = Path("/project/src/app.spec.ts")
+    def test_spec_file(self, tmp_path):
+        path = tmp_path / "src" / "app.spec.ts"
         assert classify_file_context(path) == FileContext.TEST_FIXTURE
 
-    def test_fixtures_directory(self):
-        path = Path("/project/fixtures/sample_data.txt")
+    def test_fixtures_directory(self, tmp_path):
+        path = tmp_path / "fixtures" / "sample_data.txt"
         assert classify_file_context(path) == FileContext.TEST_FIXTURE
 
-    def test_claude_plugin_directory(self):
-        path = Path("/project/.claude-plugin/config.json")
+    def test_claude_plugin_directory(self, tmp_path):
+        path = tmp_path / ".claude-plugin" / "config.json"
         assert classify_file_context(path) == FileContext.AI_CONFIG
 
-    def test_openclaw_config(self):
-        path = Path("/home/user/.openclaw/skills/test/run.py")
+    def test_openclaw_config(self, tmp_path):
+        path = tmp_path / ".openclaw" / "skills" / "test" / "run.py"
         assert classify_file_context(path) == FileContext.AI_CONFIG
 
-    def test_continue_config(self):
-        path = Path("/project/.continue/config.json")
+    def test_continue_config(self, tmp_path):
+        path = tmp_path / ".continue" / "config.json"
         assert classify_file_context(path) == FileContext.AI_CONFIG
 
 

@@ -16,10 +16,13 @@ from secureclaw.core.remediate import (
     remediate_findings,
 )
 
+# Cross-platform default path for findings that don't touch the filesystem
+_DEFAULT_FINDING_PATH = Path(tempfile.gettempdir()) / "test.env"
+
 
 def _make_finding(file_path=None, **kwargs):
     defaults = dict(
-        file_path=file_path or Path("/tmp/test.env"),
+        file_path=file_path or _DEFAULT_FINDING_PATH,
         line_number=1,
         pattern_id="PI-022",
         pattern_name="Exposed Credential",
@@ -90,7 +93,9 @@ class TestRedactCredentialInFile(unittest.TestCase):
         path.unlink()
 
     def test_fails_on_nonexistent_file(self):
-        finding = _make_finding(file_path=Path("/nonexistent/path/file.env"))
+        finding = _make_finding(
+            file_path=Path(tempfile.gettempdir()) / "nonexistent" / "path" / "file.env"
+        )
         ok, detail = redact_credential_in_file(finding)
         self.assertFalse(ok)
         self.assertIn("Cannot read", detail)
