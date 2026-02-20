@@ -84,7 +84,7 @@ def score_finding(finding: Finding) -> Finding:
     reasons: list[str] = []
     auto_fixable = False
     fix_action = ""
-    path_str = str(finding.file_path).lower()
+    path_str = str(finding.file_path).replace("\\", "/").lower()
     match_lower = finding.matched_text.lower()
 
     # --- Boosters (increase confidence = more likely real) ---

@@ -134,7 +134,7 @@ class Finding:
 
     @property
     def dedup_key(self) -> tuple:
-        return (str(self.file_path), self.line_number, self.pattern_id)
+        return (str(self.file_path).replace("\\", "/"), self.line_number, self.pattern_id)
 
 
 @dataclass
