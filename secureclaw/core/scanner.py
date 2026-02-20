@@ -329,7 +329,7 @@ def safe_walk(
 
         for entry in entries:
             try:
-                if entry.is_dir(follow_symlinks=False):
+                if entry.is_dir():
                     if entry.name in skip_dirs:
                         continue
                     if entry.is_symlink():
@@ -354,7 +354,7 @@ def safe_walk(
                     _walk(entry, depth + 1)
                 elif entry.is_symlink():
                     logger.debug("Skipping file symlink: %s", entry)
-                elif entry.is_file(follow_symlinks=False):
+                elif entry.is_file():
                     files.append(entry)
             except (PermissionError, OSError) as e:
                 logger.debug("Cannot access %s: %s", entry, e)
