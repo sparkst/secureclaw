@@ -1,7 +1,6 @@
 """Tests for report generators."""
 
 import json
-import os
 from pathlib import Path
 
 from secureclaw.core.models import (
@@ -38,7 +37,7 @@ def _sample_result() -> ScanResult:
                 pattern_name="Hidden CSS Text",
                 severity=Severity.HIGH,
                 category=PatternCategory.INVISIBLE_TEXT,
-                matched_text='display:none',
+                matched_text="display:none",
                 description="Hidden text using CSS tricks",
                 remediation="Inspect the source",
             ),
@@ -121,7 +120,7 @@ class TestHTMLReporter:
         assert "<style>" in html
         # Icons are inlined as SVGs (no CDN dependency for icons)
         assert "viewBox" in html
-        assert '<svg' in html
+        assert "<svg" in html
         # No external font CDN — uses system font stack
         assert "fonts.googleapis.com" not in html
         assert "-apple-system" in html
@@ -139,7 +138,7 @@ class TestHTMLReporter:
         # User-supplied XSS payload must be escaped
         assert "&lt;script&gt;alert(" in html
         # The unescaped payload must NOT appear inside a finding
-        assert '<script>alert(' not in html
+        assert "<script>alert(" not in html
 
     def test_sparkry_branding(self):
         html = format_html_report(_sample_result())
@@ -242,6 +241,7 @@ class TestColorModeDetection:
         monkeypatch.setenv("FORCE_COLOR", "1")
         monkeypatch.delenv("NO_COLOR", raising=False)
         from unittest.mock import patch
+
         with patch("secureclaw.reporters.terminal._supports_color", return_value=True):
             report = format_terminal_report(_sample_result(), use_color=True)
         # When color is forced and supports_color returns True, ANSI codes should be present

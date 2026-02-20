@@ -113,16 +113,17 @@ class TestAllowlistPersistence:
 
     def test_integrity_check_fails_on_tamper(self, tmp_path):
         import json
+
         path = tmp_path / "allowlist.json"
         al = Allowlist()
         al.add("*.md", "PI-001", "test")
         al.save(path)
 
         # Tamper with the file
-        with open(path, encoding="utf-8") as f:
+        with path.open(encoding="utf-8") as f:
             data = json.load(f)
         data["entries"][0]["pattern_id"] = "PI-999"
-        with open(path, "w", encoding="utf-8") as f:
+        with path.open("w", encoding="utf-8") as f:
             json.dump(data, f)
 
         loaded = Allowlist.load(path, verify_integrity=True)
@@ -147,13 +148,20 @@ class TestAllowlistCLIIntegration:
     def test_cmd_allowlist_add_creates_file(self, tmp_path):
         allowlist_file = tmp_path / ".secureclaw" / "allowlist.json"
         parser = build_parser()
-        args = parser.parse_args([
-            "allowlist", "add",
-            "--file", "*.md",
-            "--pattern", "PI-001",
-            "--reason", "Markdown files are safe",
-            "--allowlist-file", str(allowlist_file),
-        ])
+        args = parser.parse_args(
+            [
+                "allowlist",
+                "add",
+                "--file",
+                "*.md",
+                "--pattern",
+                "PI-001",
+                "--reason",
+                "Markdown files are safe",
+                "--allowlist-file",
+                str(allowlist_file),
+            ]
+        )
         exit_code = cmd_allowlist_add(args)
         assert exit_code == EXIT_CLEAN
         assert allowlist_file.exists()
@@ -169,23 +177,37 @@ class TestAllowlistCLIIntegration:
         parser = build_parser()
 
         # Add first entry
-        args = parser.parse_args([
-            "allowlist", "add",
-            "--file", "*.md",
-            "--pattern", "PI-001",
-            "--reason", "First entry",
-            "--allowlist-file", str(allowlist_file),
-        ])
+        args = parser.parse_args(
+            [
+                "allowlist",
+                "add",
+                "--file",
+                "*.md",
+                "--pattern",
+                "PI-001",
+                "--reason",
+                "First entry",
+                "--allowlist-file",
+                str(allowlist_file),
+            ]
+        )
         cmd_allowlist_add(args)
 
         # Add second entry
-        args = parser.parse_args([
-            "allowlist", "add",
-            "--file", "*.py",
-            "--pattern", "PI-004",
-            "--reason", "Second entry",
-            "--allowlist-file", str(allowlist_file),
-        ])
+        args = parser.parse_args(
+            [
+                "allowlist",
+                "add",
+                "--file",
+                "*.py",
+                "--pattern",
+                "PI-004",
+                "--reason",
+                "Second entry",
+                "--allowlist-file",
+                str(allowlist_file),
+            ]
+        )
         cmd_allowlist_add(args)
 
         loaded = Allowlist.load(allowlist_file, verify_integrity=False)
@@ -194,12 +216,18 @@ class TestAllowlistCLIIntegration:
     def test_cmd_allowlist_add_default_reason(self, tmp_path):
         allowlist_file = tmp_path / ".secureclaw" / "allowlist.json"
         parser = build_parser()
-        args = parser.parse_args([
-            "allowlist", "add",
-            "--file", "*.md",
-            "--pattern", "PI-001",
-            "--allowlist-file", str(allowlist_file),
-        ])
+        args = parser.parse_args(
+            [
+                "allowlist",
+                "add",
+                "--file",
+                "*.md",
+                "--pattern",
+                "PI-001",
+                "--allowlist-file",
+                str(allowlist_file),
+            ]
+        )
         # No --reason provided; should use default
         exit_code = cmd_allowlist_add(args)
         assert exit_code == EXIT_CLEAN

@@ -14,11 +14,9 @@ from datetime import datetime, timezone
 from typing import List
 
 from secureclaw.core.models import (
-    FileContext,
     Finding,
     PostureCheck,
     ScanResult,
-    Severity,
     Triage,
 )
 
@@ -179,16 +177,21 @@ def _render_findings(findings: List[Finding]) -> str:
             auto_fix = (
                 f'<span class="auto-fix-badge tooltip" tabindex="0">{_icon("zap", 11, 11)} Auto-Fix'
                 f'<span class="tip-text">SecureClaw can fix this automatically. '
-                f'If installed via pip: secureclaw fix report.json --apply | '
-                f'If using standalone: python3 secureclaw.py fix report.json --apply</span></span>'
+                f"If installed via pip: secureclaw fix report.json --apply | "
+                f"If using standalone: python3 secureclaw.py fix report.json --apply</span></span>"
             )
 
         conf_tip = (
             f"Confidence: how sure we are this is a real threat. {f.confidence}% "
-            + ("= virtually certain" if f.confidence >= 90
-               else "= likely real" if f.confidence >= 60
-               else "= moderate, may be intentional" if f.confidence >= 30
-               else "= very unlikely to be a real threat")
+            + (
+                "= virtually certain"
+                if f.confidence >= 90
+                else "= likely real"
+                if f.confidence >= 60
+                else "= moderate, may be intentional"
+                if f.confidence >= 30
+                else "= very unlikely to be a real threat"
+            )
             + "."
         )
 
@@ -197,7 +200,7 @@ def _render_findings(findings: List[Finding]) -> str:
              data-category="{_e(f.category.value)}"
              data-context="{_e(ctx_val)}"
              data-triage="{_e(tri_val)}"
-             data-autofix="{'yes' if f.auto_fixable else 'no'}">
+             data-autofix="{"yes" if f.auto_fixable else "no"}">
             <div class="finding-header">
                 <span class="triage-badge {_e(tri_css)} tooltip" tabindex="0">{_icon(tri_icon, 12, 12)} {_e(f.triage.label)} ({_e(f.severity.value.upper())})<span class="tip-text">{tri_tip}</span></span>
                 <span class="confidence-badge {_e(conf_css)} tooltip" tabindex="0">{_icon("gauge", 11, 11)} {f.confidence}%<span class="tip-text">{_e(conf_tip)}</span></span>
@@ -231,7 +234,9 @@ def _render_posture(checks: List[PostureCheck]) -> str:
     for c in checks:
         status = c.status
         icon = icon_map.get(status, "info")
-        style_class = status if status in ("secure", "warning", "insecure", "not_found") else "not_found"
+        style_class = (
+            status if status in ("secure", "warning", "insecure", "not_found") else "not_found"
+        )
         rec_html = ""
         if c.recommendation:
             rec_html = f'<div class="posture-rec">{_icon("lightbulb", 14, 14, "color:var(--sparkry-accent)")} {_e(c.recommendation)}</div>'
@@ -281,7 +286,9 @@ def format_html_report(result: ScanResult) -> str:
         verdict_sub = "We found files with exposed credentials or patterns that could let AI tools be manipulated. The good news: most can be fixed automatically."
     elif review_count > 0:
         verdict_class = "warning"
-        verdict_text = f"{review_count} item{'s' if review_count != 1 else ''} to review when you have time"
+        verdict_text = (
+            f"{review_count} item{'s' if review_count != 1 else ''} to review when you have time"
+        )
         verdict_sub = "No urgent threats found, but some patterns are worth a quick look."
     else:
         verdict_class = "clean"
@@ -304,8 +311,7 @@ def format_html_report(result: ScanResult) -> str:
     # Context options (human-readable)
     contexts = sorted({f.file_context.value for f in findings}) if findings else []
     context_options = "\n                ".join(
-        f'<option value="{_e(c)}">{_e(_CONTEXT_LABELS.get(c, c))}</option>'
-        for c in contexts
+        f'<option value="{_e(c)}">{_e(_CONTEXT_LABELS.get(c, c))}</option>' for c in contexts
     )
 
     findings_html = _render_findings(findings)
@@ -318,14 +324,114 @@ def format_html_report(result: ScanResult) -> str:
     posture_count = len(posture_checks)
 
     # Verdict icon
-    verdict_icon_name = "shield-alert" if verdict_class == "danger" else "alert-triangle" if verdict_class == "warning" else "shield-check"
+    verdict_icon_name = (
+        "shield-alert"
+        if verdict_class == "danger"
+        else "alert-triangle"
+        if verdict_class == "warning"
+        else "shield-check"
+    )
+
+    # Pre-compute the posture tab button (avoids backslash escapes in f-string)
+    posture_tab_btn = ""
+    if posture_checks:
+        posture_tab_btn = (
+            "<button class='tab-btn' onclick=\"switchTab('posture')\" id='tab-posture'"
+            " role='tab' aria-selected='false' aria-controls='panel-posture'>"
+            + _icon("shield-check", 18, 18)
+            + " Security Posture <span class='tab-count'>"
+            + str(posture_count)
+            + "</span></button>"
+        )
+
+    # Pre-compute the empty-state HTML (avoids nested f""" inside f""")
+    empty_state_html = ""
+    if total_findings == 0:
+        _shield_icon = _icon(
+            "shield-check", 48, 48, "color:var(--secure-color);margin-bottom:0.75rem"
+        )
+        empty_state_html = f"""
+    <div style="text-align:center;padding:3rem 1.5rem;color:#64748b;">
+        {_shield_icon}
+        <p style="font-size:1.1rem;font-weight:600;color:#1e293b;margin-bottom:0.5rem;">No findings &mdash; your files look clean!</p>
+        <p style="font-size:0.9rem;">SecureClaw scanned {s.total_files_scanned:,} files and found no prompt injection risks.</p>
+        <p style="font-size:0.85rem;margin-top:0.5rem;">Run scans periodically to stay safe.</p>
+    </div>
+    """
+
+    # Pre-compute posture section (avoids nested f''' with "" inside f""")
+    posture_section_html = ""
+    if posture_checks:
+        _info_icon = _icon("info", 16, 16)
+        posture_section_html = f"""
+<!-- SECURITY POSTURE -->
+<div class="tab-panel" id="panel-posture" role="tabpanel" aria-labelledby="tab-posture">
+<div class="container">
+    <div style="margin-bottom:1rem;font-size:0.9rem;color:#64748b;display:flex;align-items:center;gap:0.35rem;">
+        {_info_icon}
+        SecureClaw checks your AI tools' configuration for common security issues.
+    </div>
+    <div class="posture-summary">
+        <div class="posture-stat">
+            <div class="p-num" style="color:var(--secure-color);">{posture_secure}</div>
+            <div class="p-label">Secure</div>
+        </div>
+        <div class="posture-stat">
+            <div class="p-num" style="color:var(--warning-color);">{posture_warning}</div>
+            <div class="p-label">Needs Attention</div>
+        </div>
+        <div class="posture-stat">
+            <div class="p-num" style="color:#94a3b8;">{posture_info}</div>
+            <div class="p-label">Informational</div>
+        </div>
+    </div>
+    {posture_html}
+</div>
+</div>
+"""
+
+    # Pre-compute fix section (avoids nested f''' with "" inside f""")
+    fix_section_html = ""
+    if total_findings > 0:
+        _wrench_icon = _icon("wrench", 20, 20)
+        _copy_icon = _icon("clipboard-copy", 14, 14)
+        fix_section_html = f"""
+    <div class="fix-section">
+        <h2>{_wrench_icon} How to Fix These Issues</h2>
+        <ol class="fix-steps">
+            <li><div><strong>Install SecureClaw</strong> (if you haven't already)
+                <div class="code-block"><code>pip install secureclaw</code><button class="copy-btn" onclick="copyText(event, 'pip install secureclaw')">{_copy_icon} Copy</button></div>
+                <div style="font-size:0.82rem;color:#64748b;margin-top:0.25rem;">Or download standalone: <code style="background:#f1f5f9;padding:0.1rem 0.3rem;border-radius:3px;font-size:0.78rem;">curl -O https://secureclaw.sparkry.ai/secureclaw.py</code></div>
+            </div></li>
+            <li><div><strong>Scan your files</strong> to generate a fixable report
+                <div style="font-size:0.82rem;color:#64748b;margin-bottom:0.25rem;">If installed via pip:</div>
+                <div class="code-block"><code>secureclaw scan ~/Documents --format json -o report.json</code><button class="copy-btn" onclick="copyText(event, 'secureclaw scan ~/Documents --format json -o report.json')">{_copy_icon} Copy</button></div>
+                <div style="font-size:0.82rem;color:#64748b;margin:0.25rem 0;">If using standalone:</div>
+                <div class="code-block"><code>python3 secureclaw.py scan ~/Documents --format json -o report.json</code><button class="copy-btn" onclick="copyText(event, 'python3 secureclaw.py scan ~/Documents --format json -o report.json')">{_copy_icon} Copy</button></div>
+            </div></li>
+            <li><div><strong>Preview fixes</strong> (safe &mdash; doesn't change anything)
+                <div style="font-size:0.82rem;color:#64748b;margin-bottom:0.25rem;">If installed via pip:</div>
+                <div class="code-block"><code>secureclaw fix report.json</code><button class="copy-btn" onclick="copyText(event, 'secureclaw fix report.json')">{_copy_icon} Copy</button></div>
+                <div style="font-size:0.82rem;color:#64748b;margin:0.25rem 0;">If using standalone:</div>
+                <div class="code-block"><code>python3 secureclaw.py fix report.json</code><button class="copy-btn" onclick="copyText(event, 'python3 secureclaw.py fix report.json')">{_copy_icon} Copy</button></div>
+            </div></li>
+            <li><div><strong>Apply fixes</strong> when you're ready
+                <div style="font-size:0.82rem;color:#64748b;margin-bottom:0.25rem;">If installed via pip:</div>
+                <div class="code-block"><code>secureclaw fix report.json --apply</code><button class="copy-btn" onclick="copyText(event, 'secureclaw fix report.json --apply')">{_copy_icon} Copy</button></div>
+                <div style="font-size:0.82rem;color:#64748b;margin:0.25rem 0;">If using standalone:</div>
+                <div class="code-block"><code>python3 secureclaw.py fix report.json --apply</code><button class="copy-btn" onclick="copyText(event, 'python3 secureclaw.py fix report.json --apply')">{_copy_icon} Copy</button></div>
+                <div style="font-size:0.82rem;color:#64748b;margin-top:0.35rem;">Redacts exposed credentials and adds safe patterns to your allowlist. Make sure your work is committed to git first.</div>
+            </div></li>
+        </ol>
+    </div>
+    """
 
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SecureClaw Scan Report{' — ' + _e(scan_target) if scan_target else ''}</title>
+<title>SecureClaw Scan Report{" — " + _e(scan_target) if scan_target else ""}</title>
 <style>
 :root {{
     --sparkry-dark: #1a1a2e;
@@ -552,7 +658,7 @@ svg {{ flex-shrink:0; }}
         {_icon("file-search", 18, 18)} Findings
         <span class="tab-count">{total_findings}</span>
     </button>
-    {"<button class='tab-btn' onclick=\"switchTab('posture')\" id='tab-posture' role='tab' aria-selected='false' aria-controls='panel-posture'>" + _icon("shield-check", 18, 18) + " Security Posture <span class='tab-count'>" + str(posture_count) + "</span></button>" if posture_checks else ""}
+    {posture_tab_btn}
 </div>
 
 <main id="main-content">
@@ -613,36 +719,7 @@ svg {{ flex-shrink:0; }}
         </div>
     </div>
 
-    {"" if total_findings == 0 else f'''
-    <div class="fix-section">
-        <h2>{_icon("wrench", 20, 20)} How to Fix These Issues</h2>
-        <ol class="fix-steps">
-            <li><div><strong>Install SecureClaw</strong> (if you haven't already)
-                <div class="code-block"><code>pip install secureclaw</code><button class="copy-btn" onclick="copyText(event, 'pip install secureclaw')">{_icon("clipboard-copy", 14, 14)} Copy</button></div>
-                <div style="font-size:0.82rem;color:#64748b;margin-top:0.25rem;">Or download standalone: <code style="background:#f1f5f9;padding:0.1rem 0.3rem;border-radius:3px;font-size:0.78rem;">curl -O https://secureclaw.sparkry.ai/secureclaw.py</code></div>
-            </div></li>
-            <li><div><strong>Scan your files</strong> to generate a fixable report
-                <div style="font-size:0.82rem;color:#64748b;margin-bottom:0.25rem;">If installed via pip:</div>
-                <div class="code-block"><code>secureclaw scan ~/Documents --format json -o report.json</code><button class="copy-btn" onclick="copyText(event, 'secureclaw scan ~/Documents --format json -o report.json')">{_icon("clipboard-copy", 14, 14)} Copy</button></div>
-                <div style="font-size:0.82rem;color:#64748b;margin:0.25rem 0;">If using standalone:</div>
-                <div class="code-block"><code>python3 secureclaw.py scan ~/Documents --format json -o report.json</code><button class="copy-btn" onclick="copyText(event, 'python3 secureclaw.py scan ~/Documents --format json -o report.json')">{_icon("clipboard-copy", 14, 14)} Copy</button></div>
-            </div></li>
-            <li><div><strong>Preview fixes</strong> (safe &mdash; doesn't change anything)
-                <div style="font-size:0.82rem;color:#64748b;margin-bottom:0.25rem;">If installed via pip:</div>
-                <div class="code-block"><code>secureclaw fix report.json</code><button class="copy-btn" onclick="copyText(event, 'secureclaw fix report.json')">{_icon("clipboard-copy", 14, 14)} Copy</button></div>
-                <div style="font-size:0.82rem;color:#64748b;margin:0.25rem 0;">If using standalone:</div>
-                <div class="code-block"><code>python3 secureclaw.py fix report.json</code><button class="copy-btn" onclick="copyText(event, 'python3 secureclaw.py fix report.json')">{_icon("clipboard-copy", 14, 14)} Copy</button></div>
-            </div></li>
-            <li><div><strong>Apply fixes</strong> when you're ready
-                <div style="font-size:0.82rem;color:#64748b;margin-bottom:0.25rem;">If installed via pip:</div>
-                <div class="code-block"><code>secureclaw fix report.json --apply</code><button class="copy-btn" onclick="copyText(event, 'secureclaw fix report.json --apply')">{_icon("clipboard-copy", 14, 14)} Copy</button></div>
-                <div style="font-size:0.82rem;color:#64748b;margin:0.25rem 0;">If using standalone:</div>
-                <div class="code-block"><code>python3 secureclaw.py fix report.json --apply</code><button class="copy-btn" onclick="copyText(event, 'python3 secureclaw.py fix report.json --apply')">{_icon("clipboard-copy", 14, 14)} Copy</button></div>
-                <div style="font-size:0.82rem;color:#64748b;margin-top:0.35rem;">Redacts exposed credentials and adds safe patterns to your allowlist. Make sure your work is committed to git first.</div>
-            </div></li>
-        </ol>
-    </div>
-    '''}
+    {fix_section_html}
 
 </div>
 </div>
@@ -689,14 +766,7 @@ svg {{ flex-shrink:0; }}
     <div id="findings-list">
     {findings_html}
     </div>
-    {"" if total_findings > 0 else f"""
-    <div style="text-align:center;padding:3rem 1.5rem;color:#64748b;">
-        {_icon("shield-check", 48, 48, "color:var(--secure-color);margin-bottom:0.75rem")}
-        <p style="font-size:1.1rem;font-weight:600;color:#1e293b;margin-bottom:0.5rem;">No findings &mdash; your files look clean!</p>
-        <p style="font-size:0.9rem;">SecureClaw scanned {s.total_files_scanned:,} files and found no prompt injection risks.</p>
-        <p style="font-size:0.85rem;margin-top:0.5rem;">Run scans periodically to stay safe.</p>
-    </div>
-    """}
+    {empty_state_html}
     <div class="no-results" id="no-results">
         {_icon("search-x", 48, 48)}
         <p>No findings match the current filters.</p>
@@ -705,32 +775,7 @@ svg {{ flex-shrink:0; }}
 </div>
 </div>
 
-{"" if not posture_checks else f'''
-<!-- SECURITY POSTURE -->
-<div class="tab-panel" id="panel-posture" role="tabpanel" aria-labelledby="tab-posture">
-<div class="container">
-    <div style="margin-bottom:1rem;font-size:0.9rem;color:#64748b;display:flex;align-items:center;gap:0.35rem;">
-        {_icon("info", 16, 16)}
-        SecureClaw checks your AI tools' configuration for common security issues.
-    </div>
-    <div class="posture-summary">
-        <div class="posture-stat">
-            <div class="p-num" style="color:var(--secure-color);">{posture_secure}</div>
-            <div class="p-label">Secure</div>
-        </div>
-        <div class="posture-stat">
-            <div class="p-num" style="color:var(--warning-color);">{posture_warning}</div>
-            <div class="p-label">Needs Attention</div>
-        </div>
-        <div class="posture-stat">
-            <div class="p-num" style="color:#94a3b8;">{posture_info}</div>
-            <div class="p-label">Informational</div>
-        </div>
-    </div>
-    {posture_html}
-</div>
-</div>
-'''}
+{posture_section_html}
 </main>
 
 <div class="footer">

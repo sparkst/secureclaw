@@ -125,7 +125,7 @@ class PatternEngine:
         text = raw[:200]
         if pattern.category == PatternCategory.EXFILTRATION:
             # Redact the value portion of KEY=value patterns
-            text = re.sub(r'(=\s*)[^\s,;]+', r'\1[REDACTED]', text)
+            text = re.sub(r"(=\s*)[^\s,;]+", r"\1[REDACTED]", text)
         return text
 
     @staticmethod
@@ -133,7 +133,7 @@ class PatternEngine:
         """Apply the same credential redaction to context fields."""
         text = context[:200]
         if pattern.category == PatternCategory.EXFILTRATION:
-            text = re.sub(r'(=\s*)[^\s,;]+', r'\1[REDACTED]', text)
+            text = re.sub(r"(=\s*)[^\s,;]+", r"\1[REDACTED]", text)
         return text
 
     def _match_text(
@@ -172,7 +172,7 @@ class PatternEngine:
 def load_patterns_from_json(path: Path) -> List[Pattern]:
     """Load patterns from a JSON rules file."""
     try:
-        with open(path, encoding="utf-8") as f:
+        with path.open(encoding="utf-8") as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
         logger.error("Invalid JSON in rules file %s: %s", path, e)

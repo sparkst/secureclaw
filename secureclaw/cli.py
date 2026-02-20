@@ -22,7 +22,6 @@ from secureclaw.core.models import (
     Finding,
     PatternCategory,
     ScanResult,
-    ScanSummary,
     Severity,
     Triage,
 )
@@ -104,7 +103,6 @@ def _dedup_findings(findings: List[Finding]) -> List[Finding]:
     return deduped
 
 
-
 def cmd_scan(args: argparse.Namespace) -> int:
     """Execute the scan command."""
     if not args.paths:
@@ -117,9 +115,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
     targets = [Path(p).resolve() for p in args.paths]
 
     if args.max_file_size <= 0:
-        print(
-            "\n  Error: --max-file-size must be a positive number.\n"
-        )
+        print("\n  Error: --max-file-size must be a positive number.\n")
         return EXIT_ERROR
 
     # Validate targets exist
@@ -160,27 +156,38 @@ def cmd_scan(args: argparse.Namespace) -> int:
         if not args.skip_integrity and allowlist_path.exists() and not allowlist.entries:
             # Check if the file actually had entries (integrity failure returns empty)
             try:
-                with open(allowlist_path, encoding="utf-8") as _af:
+                with allowlist_path.open(encoding="utf-8") as _af:
                     _raw = json.load(_af)
                 if _raw.get("entries"):
                     print(
-                        f"\n  WARNING: Allowlist integrity check failed for {allowlist_path}\n"
-                        f"  The file may have been manually edited or corrupted. Scanning WITHOUT the allowlist.\n"
-                        f"  To bypass this check, use --skip-integrity\n"
+                        f"\n  WARNING: Allowlist integrity"
+                        f" check failed for"
+                        f" {allowlist_path}\n"
+                        f"  The file may have been manually"
+                        f" edited or corrupted. Scanning"
+                        f" WITHOUT the allowlist.\n"
+                        f"  To bypass this check, use"
+                        f" --skip-integrity\n"
                     )
             except (ValueError, OSError):
                 pass
         elif allowlist.entries:
-            logger.info("Loaded allowlist from %s (%d entries)", allowlist_path, len(allowlist.entries))
+            logger.info(
+                "Loaded allowlist from %s (%d entries)",
+                allowlist_path,
+                len(allowlist.entries),
+            )
 
     # Configure scanner
     skip_dirs: Optional[Set[str]] = None
     if args.exclude:
         skip_dirs = SKIP_DIRS | set(args.exclude)
 
-    progress_cb = _progress_callback if (
-        not args.quiet and args.format != "json" and sys.stderr.isatty()
-    ) else None
+    progress_cb = (
+        _progress_callback
+        if (not args.quiet and args.format != "json" and sys.stderr.isatty())
+        else None
+    )
 
     scanner = Scanner(
         engine=engine,
@@ -245,9 +252,13 @@ def cmd_scan(args: argparse.Namespace) -> int:
             ]
             # Recalculate summary counts after severity filtering
             summary.total_findings = len(result.findings)
-            summary.critical_count = sum(1 for f in result.findings if f.severity == Severity.CRITICAL)
+            summary.critical_count = sum(
+                1 for f in result.findings if f.severity == Severity.CRITICAL
+            )
             summary.high_count = sum(1 for f in result.findings if f.severity == Severity.HIGH)
-            summary.advisory_count = sum(1 for f in result.findings if f.severity == Severity.ADVISORY)
+            summary.advisory_count = sum(
+                1 for f in result.findings if f.severity == Severity.ADVISORY
+            )
 
     # Format output
     if args.format == "json":
@@ -261,7 +272,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
     if args.output:
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, "w", encoding="utf-8") as f:
+        with output_path.open("w", encoding="utf-8") as f:
             f.write(output)
         logger.info("Report saved to %s", output_path)
     else:
@@ -277,11 +288,17 @@ def cmd_scan(args: argparse.Namespace) -> int:
 
 def cmd_allowlist_add(args: argparse.Namespace) -> int:
     """Add an entry to the allowlist."""
-    allowlist_path = Path(args.allowlist_file) if args.allowlist_file else (
-        Path.cwd() / ".secureclaw" / "allowlist.json"
+    allowlist_path = (
+        Path(args.allowlist_file)
+        if args.allowlist_file
+        else (Path.cwd() / ".secureclaw" / "allowlist.json")
     )
 
-    allowlist = Allowlist.load(allowlist_path, verify_integrity=False) if allowlist_path.exists() else Allowlist()
+    allowlist = (
+        Allowlist.load(allowlist_path, verify_integrity=False)
+        if allowlist_path.exists()
+        else Allowlist()
+    )
     allowlist.add(
         file_pattern=args.file,
         pattern_id=args.pattern,
@@ -395,14 +412,17 @@ def cmd_fix(args: argparse.Namespace) -> int:
 
     # Load scan results from JSON
     try:
-        with open(scan_path, "r", encoding="utf-8") as f:
+        with scan_path.open("r", encoding="utf-8") as f:
             data = json.load(f)
     except (json.JSONDecodeError, OSError) as e:
         logger.error("Cannot read scan report: %s", e)
         return EXIT_ERROR
 
     if "findings" not in data:
-        logger.error("Invalid scan report — no 'findings' key. Run: secureclaw scan --format json -o report.json")
+        logger.error(
+            "Invalid scan report — no 'findings' key."
+            " Run: secureclaw scan --format json -o report.json"
+        )
         return EXIT_ERROR
 
     # Reconstruct Finding objects from JSON
@@ -470,14 +490,14 @@ def cmd_fix(args: argparse.Namespace) -> int:
     if not auto_fixable:
         print("No auto-fixable findings in the selected tier.")
         print(f"  Total findings: {len(findings)}")
-        print(f"  Auto-fixable: 0")
+        print("  Auto-fixable: 0")
         return EXIT_CLEAN
 
     # Summary before action
     redact_count = sum(1 for f in auto_fixable if f.fix_action == "redact_credential")
     allowlist_count = sum(1 for f in auto_fixable if f.fix_action == "allowlist")
 
-    print(f"\nSecureClaw Auto-Remediation")
+    print("\nSecureClaw Auto-Remediation")
     print("=" * 50)
     print(f"  Findings in scope: {len(findings)}")
     print(f"  Auto-fixable:      {len(auto_fixable)}")
@@ -501,10 +521,16 @@ def cmd_fix(args: argparse.Namespace) -> int:
     if result.allowlisted:
         # Write allowlist entries
         if args.apply:
-            allowlist_path = Path(args.allowlist_file) if args.allowlist_file else (
-                Path.cwd() / ".secureclaw" / "allowlist.json"
+            allowlist_path = (
+                Path(args.allowlist_file)
+                if args.allowlist_file
+                else (Path.cwd() / ".secureclaw" / "allowlist.json")
             )
-            allowlist = Allowlist.load(allowlist_path, verify_integrity=False) if allowlist_path.exists() else Allowlist()
+            allowlist = (
+                Allowlist.load(allowlist_path, verify_integrity=False)
+                if allowlist_path.exists()
+                else Allowlist()
+            )
             for finding in result.allowlisted:
                 allowlist.add(
                     file_pattern=str(finding.file_path),
@@ -558,9 +584,7 @@ def build_parser() -> argparse.ArgumentParser:
             "Report issues: https://github.com/sparkryai/secureclaw/issues"
         ),
     )
-    parser.add_argument(
-        "--version", action="version", version=f"SecureClaw v{__version__}"
-    )
+    parser.add_argument("--version", action="version", version=f"SecureClaw v{__version__}")
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
@@ -576,17 +600,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Files or directories to scan (e.g., . ~/Documents ~/.claude)",
     )
     scan_parser.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["terminal", "html", "json"],
         default="terminal",
         help="Output format: terminal (default), html (branded report), json (CI/CD)",
     )
     scan_parser.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         help="Save report to a file instead of printing to screen",
     )
     scan_parser.add_argument(
-        "--severity", "-s",
+        "--severity",
+        "-s",
         choices=["critical", "high", "advisory"],
         help="Only show findings at or above this severity level",
     )
@@ -634,7 +661,10 @@ def build_parser() -> argparse.ArgumentParser:
         type=lambda x: x.lower() in ("true", "1", "yes"),
         default=None,
         metavar="{true,false,yes,no,1,0}",
-        help="Force color output on/off (auto-detected by default). Valid values: true, false, yes, no, 1, 0",
+        help=(
+            "Force color output on/off (auto-detected by"
+            " default). Valid values: true, false, yes, no, 1, 0"
+        ),
     )
     scan_parser.add_argument("--verbose", "-v", action="store_true", help="Show detailed output")
     scan_parser.add_argument("--quiet", "-q", action="store_true", help="Only show findings")
@@ -643,7 +673,9 @@ def build_parser() -> argparse.ArgumentParser:
     posture_parser = subparsers.add_parser(
         "posture",
         help="Check your AI tool security posture",
-        description="Analyze your Claude Code, Cursor, and OpenClaw configurations for security risks.",
+        description=(
+            "Analyze your Claude Code, Cursor, and OpenClaw configurations for security risks."
+        ),
     )
     posture_parser.add_argument(
         "path",
@@ -770,7 +802,7 @@ def main(argv: Optional[List[str]] = None) -> None:
 
         tb_lines = traceback.format_exception(type(e), e, e.__traceback__)
         sanitized_tb = _sanitize_traceback("".join(tb_lines))
-        with open(log_path, "a", encoding="utf-8") as f:
+        with log_path.open("a", encoding="utf-8") as f:
             f.write(f"\n{'=' * 60}\n")
             f.write(f"SecureClaw v{__version__}\n")
             f.write(sanitized_tb)

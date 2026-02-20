@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_ALLOWLIST_DIR = ".secureclaw"
 DEFAULT_ALLOWLIST_FILE = "allowlist.json"
 
+
 # HMAC key derived from machine-specific data (not a secret — just tamper detection)
 def _get_hmac_key() -> bytes:
     """Generate a machine-specific HMAC key for tamper detection."""
@@ -59,14 +60,15 @@ class Allowlist:
         reason: str,
         approved_by: str = "user",
     ) -> AllowlistEntry:
-        """Add an allowlist entry. Skips if an identical (file_pattern, pattern_id) already exists."""
+        """Add an allowlist entry.
+
+        Skips if an identical (file_pattern, pattern_id) already exists.
+        """
         normalized = _normalize_path(file_pattern)
         # Dedup check: skip if this exact (file_pattern, pattern_id) pair already exists
         for existing in self._entries:
             if existing.file_pattern == normalized and existing.pattern_id == pattern_id:
-                logger.debug(
-                    "Allowlist entry already exists: %s / %s", normalized, pattern_id
-                )
+                logger.debug("Allowlist entry already exists: %s / %s", normalized, pattern_id)
                 return existing
         entry = AllowlistEntry(
             file_pattern=normalized,
@@ -140,10 +142,10 @@ class Allowlist:
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
-            os.replace(tmp_path, str(path))
+            Path(tmp_path).replace(path)
         except BaseException:
             try:
-                os.unlink(tmp_path)
+                Path(tmp_path).unlink()
             except OSError:
                 pass
             raise
@@ -155,7 +157,7 @@ class Allowlist:
         if not path.exists():
             return cls()
 
-        with open(path, encoding="utf-8") as f:
+        with path.open(encoding="utf-8") as f:
             data = json.load(f)
 
         if verify_integrity:
@@ -191,9 +193,7 @@ class Allowlist:
         if scan_dir:
             candidates.append(scan_dir / DEFAULT_ALLOWLIST_DIR / DEFAULT_ALLOWLIST_FILE)
         candidates.append(Path.cwd() / DEFAULT_ALLOWLIST_DIR / DEFAULT_ALLOWLIST_FILE)
-        candidates.append(
-            Path.home() / ".config" / "secureclaw" / DEFAULT_ALLOWLIST_FILE
-        )
+        candidates.append(Path.home() / ".config" / "secureclaw" / DEFAULT_ALLOWLIST_FILE)
         for path in candidates:
             if path.exists():
                 return path

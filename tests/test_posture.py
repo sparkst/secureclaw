@@ -2,7 +2,6 @@
 
 import json
 import os
-from pathlib import Path
 from unittest.mock import patch
 
 from secureclaw.posture.analyzer import (
@@ -41,10 +40,7 @@ class TestCheckClaudeCode:
         (claude_dir / "settings.json").write_text(json.dumps(settings))
         with patch("secureclaw.posture.analyzer._home", return_value=tmp_path):
             checks = check_claude_code()
-        assert any(
-            c.status == "warning" and "write" in c.check_name.lower()
-            for c in checks
-        )
+        assert any(c.status == "warning" and "write" in c.check_name.lower() for c in checks)
 
     def test_settings_with_bash_permission_warns(self, tmp_path):
         claude_dir = tmp_path / ".claude"
@@ -53,10 +49,7 @@ class TestCheckClaudeCode:
         (claude_dir / "settings.json").write_text(json.dumps(settings))
         with patch("secureclaw.posture.analyzer._home", return_value=tmp_path):
             checks = check_claude_code()
-        assert any(
-            c.status == "warning" and "shell" in c.check_name.lower()
-            for c in checks
-        )
+        assert any(c.status == "warning" and "shell" in c.check_name.lower() for c in checks)
 
     def test_settings_without_dangerous_permissions_no_warning(self, tmp_path):
         claude_dir = tmp_path / ".claude"
@@ -71,8 +64,10 @@ class TestCheckClaudeCode:
             checks = check_claude_code()
         # Filter out file permission warnings (not related to AI permission model)
         permission_model_warnings = [
-            c for c in checks
-            if c.status == "warning" and c.tool_name == "Claude Code"
+            c
+            for c in checks
+            if c.status == "warning"
+            and c.tool_name == "Claude Code"
             and "File Permissions" not in c.tool_name
             and "world" not in c.check_name
         ]
@@ -94,9 +89,7 @@ class TestCheckClaudeCode:
         (scan_dir / "CLAUDE.md").write_text("# Instructions")
         with patch("secureclaw.posture.analyzer._home", return_value=tmp_path):
             checks = check_claude_code(scan_dir=scan_dir)
-        assert any(
-            "CLAUDE.md" in c.check_name for c in checks
-        )
+        assert any("CLAUDE.md" in c.check_name for c in checks)
 
     def test_mcp_servers_few_is_secure(self, tmp_path):
         claude_dir = tmp_path / ".claude"
@@ -112,9 +105,7 @@ class TestCheckClaudeCode:
     def test_mcp_servers_many_is_warning(self, tmp_path):
         claude_dir = tmp_path / ".claude"
         claude_dir.mkdir()
-        mcp_config = {
-            "mcpServers": {f"server{i}": {} for i in range(5)}
-        }
+        mcp_config = {"mcpServers": {f"server{i}": {} for i in range(5)}}
         (claude_dir / "mcp.json").write_text(json.dumps(mcp_config))
         with patch("secureclaw.posture.analyzer._home", return_value=tmp_path):
             checks = check_claude_code()
@@ -307,10 +298,7 @@ class TestCheckBrowserCache:
         chrome_dir.mkdir(parents=True)
         with patch("secureclaw.posture.analyzer._home", return_value=tmp_path):
             checks = check_browser_cache()
-        assert any(
-            "Chrome" in c.check_name and c.status == "advisory"
-            for c in checks
-        )
+        assert any("Chrome" in c.check_name and c.status == "advisory" for c in checks)
 
     def test_firefox_profile_detected(self, tmp_path):
         # Linux Firefox path

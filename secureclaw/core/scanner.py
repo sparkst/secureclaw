@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import os
-import stat
 import time
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set, Tuple
@@ -12,7 +11,6 @@ from typing import Callable, Dict, List, Optional, Set, Tuple
 from secureclaw.core.models import (
     FileContext,
     FileResult,
-    Finding,
     ScanSummary,
 )
 from secureclaw.core.patterns import PatternEngine
@@ -24,51 +22,140 @@ DEFAULT_MAX_FILE_SIZE = 10 * 1024 * 1024
 
 # Extensions we scan (text-based files that could contain injections)
 TEXT_EXTENSIONS = {
-    ".txt", ".md", ".markdown", ".rst", ".adoc",
-    ".py", ".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs",
-    ".rb", ".php", ".java", ".go", ".rs", ".c", ".cpp", ".h", ".hpp",
-    ".sh", ".bash", ".zsh", ".fish", ".ps1", ".bat", ".cmd",
-    ".html", ".htm", ".xml", ".svg", ".css", ".scss", ".less",
-    ".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf",
-    ".env", ".envrc", ".env.local", ".env.example",
-    ".csv", ".tsv",
-    ".sql", ".graphql", ".gql",
-    ".dockerfile", ".docker-compose",
-    ".tf", ".tfvars", ".hcl",
-    ".r", ".rmd",
-    ".lua", ".vim", ".el",
-    ".gitignore", ".gitattributes", ".gitmodules",
-    ".editorconfig", ".prettierrc", ".eslintrc",
-    ".cursorrules", ".cursorignore",
+    ".txt",
+    ".md",
+    ".markdown",
+    ".rst",
+    ".adoc",
+    ".py",
+    ".js",
+    ".ts",
+    ".jsx",
+    ".tsx",
+    ".mjs",
+    ".cjs",
+    ".rb",
+    ".php",
+    ".java",
+    ".go",
+    ".rs",
+    ".c",
+    ".cpp",
+    ".h",
+    ".hpp",
+    ".sh",
+    ".bash",
+    ".zsh",
+    ".fish",
+    ".ps1",
+    ".bat",
+    ".cmd",
+    ".html",
+    ".htm",
+    ".xml",
+    ".svg",
+    ".css",
+    ".scss",
+    ".less",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".ini",
+    ".cfg",
+    ".conf",
+    ".env",
+    ".envrc",
+    ".env.local",
+    ".env.example",
+    ".csv",
+    ".tsv",
+    ".sql",
+    ".graphql",
+    ".gql",
+    ".dockerfile",
+    ".docker-compose",
+    ".tf",
+    ".tfvars",
+    ".hcl",
+    ".r",
+    ".rmd",
+    ".lua",
+    ".vim",
+    ".el",
+    ".gitignore",
+    ".gitattributes",
+    ".gitmodules",
+    ".editorconfig",
+    ".prettierrc",
+    ".eslintrc",
+    ".cursorrules",
+    ".cursorignore",
     ".clinerules",
 }
 
 # Files to always scan regardless of extension
 ALWAYS_SCAN_NAMES = {
-    "CLAUDE.md", "CLAUDE.local.md", ".claude",
-    "Makefile", "Rakefile", "Vagrantfile", "Procfile",
-    "requirements.txt", "Pipfile", "Gemfile",
-    "package.json", "composer.json", "Cargo.toml",
-    ".cursorrules", ".cursorignore",
+    "CLAUDE.md",
+    "CLAUDE.local.md",
+    ".claude",
+    "Makefile",
+    "Rakefile",
+    "Vagrantfile",
+    "Procfile",
+    "requirements.txt",
+    "Pipfile",
+    "Gemfile",
+    "package.json",
+    "composer.json",
+    "Cargo.toml",
+    ".cursorrules",
+    ".cursorignore",
     ".clinerules",
 }
 
 # System directories to skip by default (exact directory matches)
 SYSTEM_DIRS = {
-    "/etc", "/usr", "/var", "/sbin", "/bin", "/boot", "/dev", "/proc", "/sys",
-    "/Library", "/System",
-    "C:\\Windows", "C:\\Program Files", "C:\\Program Files (x86)",
+    "/etc",
+    "/usr",
+    "/var",
+    "/sbin",
+    "/bin",
+    "/boot",
+    "/dev",
+    "/proc",
+    "/sys",
+    "/Library",
+    "/System",
+    "C:\\Windows",
+    "C:\\Program Files",
+    "C:\\Program Files (x86)",
 }
 
 # Directories to always skip (build artifacts, dependencies)
 SKIP_DIRS = {
-    "node_modules", ".git", "__pycache__", ".tox", ".nox",
-    ".mypy_cache", ".ruff_cache", ".pytest_cache",
-    "venv", ".venv", "env", ".env",
-    "dist", "build", ".next", ".nuxt",
-    ".terraform", ".serverless",
-    "vendor", "bower_components",
-    ".DS_Store", "Thumbs.db",
+    "node_modules",
+    ".git",
+    "__pycache__",
+    ".tox",
+    ".nox",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".pytest_cache",
+    "venv",
+    ".venv",
+    "env",
+    ".env",
+    "dist",
+    "build",
+    ".next",
+    ".nuxt",
+    ".terraform",
+    ".serverless",
+    "vendor",
+    "bower_components",
+    ".DS_Store",
+    "Thumbs.db",
 }
 
 # Priority directories for AI tool scanning
@@ -88,26 +175,48 @@ AI_CONFIG_ONLY_PATTERNS = {"PI-004", "PI-005", "PI-008", "PI-014", "PI-022", "PI
 
 # Path components that indicate an AI configuration file
 AI_CONFIG_INDICATORS = {
-    ".claude", ".cursor", ".continue", ".cline", ".openclaw",
-    ".config/claude", ".config/cursor",
+    ".claude",
+    ".cursor",
+    ".continue",
+    ".cline",
+    ".openclaw",
+    ".config/claude",
+    ".config/cursor",
 }
 
 # Filenames that are AI configuration
 AI_CONFIG_FILENAMES = {
-    "CLAUDE.md", "CLAUDE.local.md", "SKILL.md",
-    ".cursorrules", ".cursorignore", ".clinerules",
+    "CLAUDE.md",
+    "CLAUDE.local.md",
+    "SKILL.md",
+    ".cursorrules",
+    ".cursorignore",
+    ".clinerules",
 }
 
 # Parent directory names that indicate AI tool structure
 AI_CONFIG_PARENTS = {
-    "agents", "skills", "commands", "hooks", "prompts",
-    "agent-knowledge", "knowledge-base",
+    "agents",
+    "skills",
+    "commands",
+    "hooks",
+    "prompts",
+    "agent-knowledge",
+    "knowledge-base",
 }
 
 # Test directory/file indicators
 TEST_INDICATORS = {
-    "test", "tests", "spec", "specs", "__tests__", "fixtures",
-    "test_", "spec_", "_test", "_spec",
+    "test",
+    "tests",
+    "spec",
+    "specs",
+    "__tests__",
+    "fixtures",
+    "test_",
+    "spec_",
+    "_test",
+    "_spec",
 }
 
 
@@ -156,7 +265,7 @@ def classify_file_context(path: Path) -> FileContext:
 def is_binary_file(path: Path, sample_size: int = 8192) -> bool:
     """Detect binary files by checking for null bytes in the first 8KB (git's method)."""
     try:
-        with open(path, "rb") as f:
+        with path.open("rb") as f:
             chunk = f.read(sample_size)
             return b"\x00" in chunk
     except (OSError, PermissionError):
@@ -303,7 +412,7 @@ def scan_file(
     file_context = classify_file_context(path)
 
     try:
-        with open(path, encoding=encoding, errors="replace") as f:
+        with path.open(encoding=encoding, errors="replace") as f:
             lines = f.readlines()
     except (OSError, PermissionError) as e:
         result.skipped = True

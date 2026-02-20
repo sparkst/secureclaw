@@ -8,16 +8,28 @@ match content, and context.
 from __future__ import annotations
 
 import re
-from pathlib import Path
 from typing import List
 
 from secureclaw.core.models import FileContext, Finding, Triage
 
 # Real credential prefixes — these are almost certainly live secrets
 REAL_TOKEN_PREFIXES = (
-    "sk-ant-", "sk-proj-", "sk-", "ghp_", "gho_", "ghs_", "github_pat_",
-    "glpat-", "xoxb-", "xoxp-", "AKIA", "eyJ",
-    "AIza", "r8_", "hf_", "Bearer ",
+    "sk-ant-",
+    "sk-proj-",
+    "sk-",
+    "ghp_",
+    "gho_",
+    "ghs_",
+    "github_pat_",
+    "glpat-",
+    "xoxb-",
+    "xoxp-",
+    "AKIA",
+    "eyJ",
+    "AIza",
+    "r8_",
+    "hf_",
+    "Bearer ",
 )
 
 # Placeholder values that are NOT real credentials
@@ -30,21 +42,39 @@ PLACEHOLDER_PATTERNS = re.compile(
 
 # Archive / backup / history paths that are stale
 ARCHIVE_INDICATORS = (
-    "/archive/", "/.specstory/", "/backup", "/history/",
-    "-backup-", "/old/", "/deprecated/", "/legacy/",
+    "/archive/",
+    "/.specstory/",
+    "/backup",
+    "/history/",
+    "-backup-",
+    "/old/",
+    "/deprecated/",
+    "/legacy/",
 )
 
 # Security research content that discusses injections
 SECURITY_RESEARCH_INDICATORS = (
-    "security-scanner", "email-security", "prompt-injection",
-    "secureclaw", "injection-test", "attack-", "pentest",
-    "vulnerability", "exploit-", "cve-",
+    "security-scanner",
+    "email-security",
+    "prompt-injection",
+    "secureclaw",
+    "injection-test",
+    "attack-",
+    "pentest",
+    "vulnerability",
+    "exploit-",
+    "cve-",
 )
 
 # Coverage / generated report paths
 GENERATED_INDICATORS = (
-    "/coverage/", "/lcov-report/", "/__generated__/",
-    "/dist/", "/build/", ".min.js", ".bundle.",
+    "/coverage/",
+    "/lcov-report/",
+    "/__generated__/",
+    "/dist/",
+    "/build/",
+    ".min.js",
+    ".bundle.",
 )
 
 

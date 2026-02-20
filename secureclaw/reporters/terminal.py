@@ -7,8 +7,6 @@ import sys
 from typing import List, Optional
 
 from secureclaw.core.models import (
-    Finding,
-    PostureCheck,
     ScanResult,
     Severity,
     Triage,
@@ -86,7 +84,7 @@ def format_terminal_report(result: ScanResult, use_color: Optional[bool] = None)
     lines.append("")
     lines.append(colors.bold("SecureClaw Scan Report"))
     lines.append(colors.bold("=" * 60))
-    lines.append(f"  Powered by Sparkry AI - Your Solo Founder's AI Advantage")
+    lines.append("  Powered by Sparkry AI - Your Solo Founder's AI Advantage")
     lines.append("")
 
     # Executive Summary
@@ -102,12 +100,15 @@ def format_terminal_report(result: ScanResult, use_color: Optional[bool] = None)
     lines.append("")
 
     # Verdict
+    summary_text = (
+        f"  {s.critical_count} CRITICAL  |  {s.high_count} HIGH  |  {s.advisory_count} ADVISORY"
+    )
     if s.critical_count > 0:
-        lines.append(colors.red(f"  {s.critical_count} CRITICAL  |  {s.high_count} HIGH  |  {s.advisory_count} ADVISORY"))
+        lines.append(colors.red(summary_text))
     elif s.high_count > 0:
-        lines.append(colors.yellow(f"  {s.critical_count} CRITICAL  |  {s.high_count} HIGH  |  {s.advisory_count} ADVISORY"))
+        lines.append(colors.yellow(summary_text))
     elif s.advisory_count > 0:
-        lines.append(colors.blue(f"  {s.critical_count} CRITICAL  |  {s.high_count} HIGH  |  {s.advisory_count} ADVISORY"))
+        lines.append(colors.blue(summary_text))
     else:
         lines.append(colors.green("  No issues found!"))
     lines.append("")
@@ -142,9 +143,11 @@ def format_terminal_report(result: ScanResult, use_color: Optional[bool] = None)
         review = [f for f in result.findings if f.triage == Triage.REVIEW]
         suppressed = [f for f in result.findings if f.triage == Triage.SUPPRESSED]
 
-        lines.append(f"  Triage: {colors.red(str(len(act_now)) + ' ACT NOW')} | "
-                      f"{colors.yellow(str(len(review)) + ' REVIEW')} | "
-                      f"{colors.dim(str(len(suppressed)) + ' SUPPRESSED')}")
+        lines.append(
+            f"  Triage: {colors.red(str(len(act_now)) + ' ACT NOW')} | "
+            f"{colors.yellow(str(len(review)) + ' REVIEW')} | "
+            f"{colors.dim(str(len(suppressed)) + ' SUPPRESSED')}"
+        )
         lines.append("")
 
         tier_configs = [
@@ -185,7 +188,7 @@ def format_terminal_report(result: ScanResult, use_color: Optional[bool] = None)
                 lines.append(f"    Fix:   {finding.remediation}")
                 lines.append(
                     f"    Suppress: secureclaw allowlist add "
-                    f"--file \"{finding.file_path}\" --pattern {finding.pattern_id}"
+                    f'--file "{finding.file_path}" --pattern {finding.pattern_id}'
                 )
                 lines.append("")
 
@@ -193,14 +196,16 @@ def format_terminal_report(result: ScanResult, use_color: Optional[bool] = None)
         auto_fixable = [f for f in result.findings if f.auto_fixable]
         if auto_fixable:
             lines.append(colors.bold(f"  {len(auto_fixable)} findings can be auto-fixed."))
-            lines.append(f"  Run: secureclaw scan . --format json -o report.json")
-            lines.append(f"  Then: secureclaw fix report.json  (dry-run by default; add --apply to execute)")
+            lines.append("  Run: secureclaw scan . --format json -o report.json")
+            lines.append(
+                "  Then: secureclaw fix report.json  (dry-run by default; add --apply to execute)"
+            )
             lines.append("")
 
     # Footer
     lines.append("-" * 60)
     lines.append(f"  SecureClaw v{result.tool_version} | secureclaw.sparkry.ai")
-    lines.append(f"  Run periodically to stay safe. Update: pip install -U secureclaw")
+    lines.append("  Run periodically to stay safe. Update: pip install -U secureclaw")
     lines.append("")
 
     return "\n".join(lines)

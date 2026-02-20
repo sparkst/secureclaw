@@ -62,22 +62,20 @@ def redact_credential_in_file(finding: Finding) -> Tuple[bool, str]:
         return False, "Could not locate credential pattern on line"
 
     old_value = match.group(2)
-    new_line = line[:match.start(2)] + REDACTED + line[match.end(2):]
+    new_line = line[: match.start(2)] + REDACTED + line[match.end(2) :]
     lines[line_idx] = new_line
 
     # Atomic write: write to temp file first, then rename
     try:
-        fd, tmp_path = tempfile.mkstemp(
-            dir=str(path.parent), suffix=".tmp", prefix=".secureclaw_"
-        )
+        fd, tmp_path = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp", prefix=".secureclaw_")
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as tmp_f:
                 tmp_f.write("\n".join(lines))
-            os.replace(tmp_path, str(path))
+            Path(tmp_path).replace(path)
         except BaseException:
             # Clean up temp file on any failure
             try:
-                os.unlink(tmp_path)
+                Path(tmp_path).unlink()
             except OSError:
                 pass
             raise
