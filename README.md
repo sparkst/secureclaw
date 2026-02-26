@@ -10,10 +10,38 @@ Built by [Sparkry AI](https://sparkry.ai) for solo founders who use AI tools lik
 
 ## Quick Start
 
-```bash
-# Install
-pip install secureclaw
+### Install
 
+**Option 1: pipx (recommended — isolated, no conflicts)**
+
+```bash
+# macOS
+brew install pipx
+pipx install git+https://github.com/sparkst/secureclaw.git
+
+# Linux / Windows
+python3 -m pip install --user pipx
+pipx install git+https://github.com/sparkst/secureclaw.git
+```
+
+**Option 2: pip in a virtual environment**
+
+```bash
+python3 -m venv ~/.secureclaw-venv
+source ~/.secureclaw-venv/bin/activate    # Windows: .secureclaw-venv\Scripts\activate
+pip install git+https://github.com/sparkst/secureclaw.git
+```
+
+**Option 3: Single-file download (no pip needed)**
+
+```bash
+curl -sL https://raw.githubusercontent.com/sparkst/secureclaw/main/dist/secureclaw.py -o secureclaw.py
+python3 secureclaw.py scan .
+```
+
+### Run
+
+```bash
 # Scan your current directory
 secureclaw scan .
 
