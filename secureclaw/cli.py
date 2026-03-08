@@ -30,6 +30,7 @@ from secureclaw.core.remediate import remediate_findings
 from secureclaw.core.scanner import Scanner, SKIP_DIRS
 from secureclaw.posture.analyzer import run_posture_analysis
 from secureclaw.reporters.terminal import Colors, format_terminal_report
+from secureclaw.gui import start_gui_server
 from secureclaw.reporters.html_report import format_html_report
 from secureclaw.reporters.json_report import format_json_report
 
@@ -264,7 +265,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
     if args.format == "json":
         output = format_json_report(result)
     elif args.format == "html":
-        output = format_html_report(result)
+        output = format_html_report(result, mode=args.report_mode)
     else:
         output = format_terminal_report(result, use_color=args.color)
 
@@ -566,7 +567,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="secureclaw",
         description=(
-            "SecureClaw — Scan your files for prompt injection risks.\n\n"
+            "SecureClaw — Scan your files for hidden AI threats.\n\n"
             "Your AI reads your files. Make sure those files aren't trying to hijack it.\n"
             "Built by Sparkry AI for solo founders who use AI tools."
         ),
@@ -591,8 +592,8 @@ def build_parser() -> argparse.ArgumentParser:
     # scan command
     scan_parser = subparsers.add_parser(
         "scan",
-        help="Scan files and directories for prompt injection patterns",
-        description="Scan one or more paths for prompt injection risks in your AI tool files.",
+        help="Scan files and directories for hidden AI threats",
+        description="Scan one or more paths for hidden AI threats in your AI tool files.",
     )
     scan_parser.add_argument(
         "paths",
@@ -605,6 +606,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["terminal", "html", "json"],
         default="terminal",
         help="Output format: terminal (default), html (branded report), json (CI/CD)",
+    )
+    scan_parser.add_argument(
+        "--report-mode",
+        choices=["simple", "detailed"],
+        default="simple",
+        help="HTML report style: simple (default, non-technical) or detailed (tabbed developer dashboard)",
     )
     scan_parser.add_argument(
         "--output",
@@ -738,6 +745,19 @@ def build_parser() -> argparse.ArgumentParser:
     al_remove.add_argument("--file", help="File path or glob pattern to match")
     al_remove.add_argument("--pattern", help="Pattern ID to remove (e.g., PI-001)")
 
+    # gui command
+    gui_parser = subparsers.add_parser(
+        "gui",
+        help="Open the browser-based GUI for scanning",
+        description="Launch a local web server with a visual interface for scanning folders.",
+    )
+    gui_parser.add_argument(
+        "--port",
+        type=int,
+        default=0,
+        help="Port to bind to (default: random available port)",
+    )
+
     return parser
 
 
@@ -749,15 +769,10 @@ def main(argv: Optional[List[str]] = None) -> None:
     args = parser.parse_args(argv)
 
     if not args.command:
-        print(
-            "\n  SecureClaw - Prompt Injection Scanner\n"
-            "  Your AI reads your files. Make sure those files aren't trying to hijack it.\n"
-            "\n"
-            "  Quick start:  secureclaw scan .\n"
-            "  Full help:    secureclaw --help\n"
-            "\n"
-            "  Built by Sparkry AI  |  https://secureclaw.sparkry.ai\n"
-        )
+        # No subcommand: launch the GUI.
+        # CLI users always specify a subcommand (scan, fix, posture, etc.).
+        # Running bare "secureclaw" — whether from Finder or terminal — opens the GUI.
+        start_gui_server(port=0)
         sys.exit(EXIT_CLEAN)
 
     _setup_logging(
@@ -766,7 +781,10 @@ def main(argv: Optional[List[str]] = None) -> None:
     )
 
     try:
-        if args.command == "scan":
+        if args.command == "gui":
+            start_gui_server(port=getattr(args, "port", 0))
+            sys.exit(EXIT_CLEAN)
+        elif args.command == "scan":
             sys.exit(cmd_scan(args))
         elif args.command == "fix":
             sys.exit(cmd_fix(args))
