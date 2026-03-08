@@ -111,12 +111,12 @@ class TestTerminalReporter:
 
 class TestHTMLReporter:
     def test_valid_html(self):
-        html = format_html_report(_sample_result())
+        html = format_html_report(_sample_result(), mode="detailed")
         assert html.startswith("<!DOCTYPE html>")
         assert "</html>" in html
 
     def test_self_contained(self):
-        html = format_html_report(_sample_result())
+        html = format_html_report(_sample_result(), mode="detailed")
         assert "<style>" in html
         # Icons are inlined as SVGs (no CDN dependency for icons)
         assert "viewBox" in html
@@ -126,7 +126,7 @@ class TestHTMLReporter:
         assert "-apple-system" in html
 
     def test_contains_findings(self):
-        html = format_html_report(_sample_result())
+        html = format_html_report(_sample_result(), mode="detailed")
         assert "Ignore Instructions" in html
         # New design uses triage labels instead of severity labels
         assert "Act Now" in html or "Review" in html or "Suppressed" in html
@@ -134,23 +134,23 @@ class TestHTMLReporter:
     def test_html_escapes_user_content(self):
         result = _sample_result()
         result.findings[0].matched_text = '<script>alert("xss")</script>'
-        html = format_html_report(result)
+        html = format_html_report(result, mode="detailed")
         # User-supplied XSS payload must be escaped
         assert "&lt;script&gt;alert(" in html
         # The unescaped payload must NOT appear inside a finding
         assert "<script>alert(" not in html
 
     def test_sparkry_branding(self):
-        html = format_html_report(_sample_result())
+        html = format_html_report(_sample_result(), mode="detailed")
         assert "Sparkry AI" in html
         assert "secureclaw.sparkry.ai" in html
 
     def test_posture_section(self):
-        html = format_html_report(_sample_result())
+        html = format_html_report(_sample_result(), mode="detailed")
         assert "Claude Code" in html
 
     def test_accessibility_tooltips(self):
-        html = format_html_report(_sample_result())
+        html = format_html_report(_sample_result(), mode="detailed")
         # New design uses tooltip tip-text for accessibility
         assert "tip-text" in html
         assert "tooltip" in html
@@ -204,7 +204,7 @@ class TestHTMLCleanScan:
             ),
             tool_version="1.2.0",
         )
-        html = format_html_report(result)
+        html = format_html_report(result, mode="detailed")
         assert "<!DOCTYPE html>" in html
         assert "</html>" in html
         # Should contain clean scan messaging
