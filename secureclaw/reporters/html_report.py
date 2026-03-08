@@ -10,7 +10,9 @@ User content escaped via html.escape().
 from __future__ import annotations
 
 import html
+import urllib.parse
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import List
 
 from secureclaw.core.models import (
@@ -99,6 +101,9 @@ _ICON_SVGS = {
     "check": '<path d="M20 6 9 17l-5-5"/>',
     "rotate-ccw": '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
     "download": '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+    "life-buoy": '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="14.83" y1="9.17" x2="18.36" y2="5.64"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>',
+    "mail": '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+    "circle": '<circle cx="12" cy="12" r="10"/>',
 }
 
 
@@ -282,9 +287,367 @@ def format_html_report(result: ScanResult, mode: str = "simple") -> str:
     return _format_detailed(result)
 
 
+def _simple_css() -> str:
+    """Return the <style> block for the simple report."""
+    return """<style>
+:root {
+    --sparkry-dark: #1b1b1b;
+    --sparkry-accent: #E8751A;
+    --act-now-color: #cf5757;
+    --review-color: #cfb357;
+    --secure-color: #57cf7a;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--sparkry-dark); background: #f8f7f5; line-height: 1.6;
+}
+.skip-link {
+    position: absolute; left: -999px; top: auto;
+    z-index: 100; padding: 8px 16px;
+    background: var(--sparkry-accent); color: #fff;
+}
+.skip-link:focus { left: 8px; top: 8px; }
+.header {
+    background: var(--sparkry-dark); color: #fff;
+    padding: 16px 24px; display: flex; align-items: center; gap: 16px;
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-logo { height: 28px; }
+.header-tagline { font-size: 14px; opacity: 0.8; margin-left: auto; }
+.container { max-width: 700px; margin: 0 auto; padding: 24px 16px; }
+.verdict-hero {
+    text-align: center; padding: 32px 16px; border-radius: 12px;
+    margin-bottom: 24px; background: #fff;
+}
+.verdict-circle {
+    width: 88px; height: 88px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+}
+.verdict-circle.danger { background: #fde8e8; color: var(--act-now-color); }
+.verdict-circle.warning { background: #fdf5e1; color: var(--review-color); }
+.verdict-circle.clean { background: #e5f9ea; color: var(--secure-color); }
+.verdict-text { font-size: 20px; font-weight: 700; margin: 0 0 8px; }
+.verdict-sub { font-size: 14px; color: #666; margin: 0; }
+.summary-grid { display: flex; gap: 12px; margin-bottom: 24px; }
+.summary-card {
+    flex: 1; padding: 16px; border-radius: 8px; text-align: center;
+    background: #fff;
+}
+.summary-card.danger { border-left: 4px solid var(--act-now-color); }
+.summary-card.warning { border-left: 4px solid var(--review-color); }
+.summary-num { font-size: 28px; font-weight: 700; }
+.summary-card.danger .summary-num { color: var(--act-now-color); }
+.summary-card.warning .summary-num { color: var(--review-color); }
+.summary-label { font-size: 13px; color: #666; }
+.section-heading {
+    font-size: 18px; font-weight: 700; margin: 28px 0 12px;
+    padding-bottom: 6px; border-bottom: 2px solid #eee;
+}
+.simple-finding {
+    background: #fff; border-radius: 8px; padding: 16px;
+    margin-bottom: 16px; border-left: 4px solid #ccc;
+}
+.simple-finding.act_now { border-left-color: var(--act-now-color); }
+.simple-finding.review { border-left-color: var(--review-color); }
+.finding-severity {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600; margin-bottom: 6px;
+}
+.finding-severity .dot {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+}
+.act_now .finding-severity .dot { background: var(--act-now-color); }
+.review .finding-severity .dot { background: var(--review-color); }
+.act_now .finding-severity { color: var(--act-now-color); }
+.review .finding-severity { color: var(--review-color); }
+.finding-file { font-size: 13px; color: #888; margin-bottom: 8px; }
+.finding-what { font-size: 14px; margin-bottom: 12px; }
+.finding-action-box {
+    background: #faf8f5; border-radius: 6px; padding: 12px;
+    font-size: 14px; margin-bottom: 10px;
+}
+.finding-action-box strong { display: block; margin-bottom: 4px; }
+details { margin-top: 8px; }
+details summary {
+    cursor: pointer; font-size: 13px; color: #888;
+    padding: 4px 0; user-select: none;
+}
+details summary:hover { color: var(--sparkry-accent); }
+.tech-detail { font-size: 13px; padding: 8px 0; color: #555; }
+.tech-detail code {
+    background: #f0efed; padding: 2px 6px; border-radius: 3px;
+    font-size: 12px; word-break: break-all;
+}
+.tech-detail .file-path { color: #888; font-family: monospace; font-size: 12px; }
+.checklist { background: #fff; border-radius: 8px; padding: 16px; }
+.checklist-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid #f0efed;
+}
+.checklist-item:last-child { border-bottom: none; }
+.checklist-item.secure svg { color: var(--secure-color); }
+.checklist-item.warning svg { color: var(--review-color); }
+.checklist-item.insecure svg { color: var(--act-now-color); }
+.checklist-item.not_found svg { color: #aaa; }
+.get-help {
+    background: #fff; border-radius: 8px; padding: 20px;
+    margin-top: 24px;
+}
+.help-option { margin-bottom: 16px; }
+.help-option:last-child { margin-bottom: 0; }
+.help-btn {
+    display: inline-block; padding: 10px 20px; border-radius: 6px;
+    text-decoration: none; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: none;
+}
+.help-btn.primary {
+    background: var(--sparkry-accent); color: #fff;
+}
+.help-btn.secondary {
+    background: #f0efed; color: var(--sparkry-dark);
+}
+.copy-prompt {
+    display: none; background: #f8f7f5; border-radius: 6px;
+    padding: 12px; margin-top: 8px; font-size: 13px;
+    font-family: monospace; white-space: pre-wrap; word-break: break-word;
+}
+.copy-prompt.visible { display: block; }
+.footer {
+    text-align: center; padding: 24px 16px; font-size: 12px;
+    color: #999; border-top: 1px solid #eee; margin-top: 32px;
+}
+.footer a { color: var(--sparkry-accent); text-decoration: none; }
+@media (max-width: 640px) {
+    .header { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .header-tagline { margin-left: 0; }
+    .summary-grid { flex-direction: column; }
+    .verdict-hero { padding: 24px 12px; }
+    .container { padding: 16px 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+</style>"""
+
+
+def _simple_summary_counts(act_now: int, review: int) -> str:
+    """Return summary cards HTML. Empty string if both are 0."""
+    if act_now == 0 and review == 0:
+        return ""
+    parts = []
+    parts.append('<div class="summary-grid">')
+    if act_now > 0:
+        parts.append(
+            f'<div class="summary-card danger">'
+            f'<div class="summary-num">{act_now}</div>'
+            f'<div class="summary-label">Needs Action</div></div>'
+        )
+    if review > 0:
+        parts.append(
+            f'<div class="summary-card warning">'
+            f'<div class="summary-num">{review}</div>'
+            f'<div class="summary-label">Worth Reviewing</div></div>'
+        )
+    parts.append("</div>")
+    return "\n".join(parts)
+
+
+def _render_simple_findings(findings: List[Finding]) -> str:
+    """Render finding cards grouped by triage (act_now first, then review)."""
+    if not findings:
+        return ""
+    act_now_findings = [f for f in findings if f.triage == Triage.ACT_NOW]
+    review_findings = [f for f in findings if f.triage == Triage.REVIEW]
+    ordered = act_now_findings + review_findings
+
+    parts = []
+    for f in ordered:
+        tri_val = f.triage.value
+        if tri_val == "act_now":
+            severity_label = "Needs Action"
+        else:
+            severity_label = "Worth Reviewing"
+
+        filename = Path(f.file_path).name
+        full_path = str(f.file_path)
+        wtd_text = _WTD_TEXT.get(tri_val, _WTD_TEXT["review"])
+        matched_truncated = _e((f.matched_text or "")[:120])
+
+        parts.append(f"""<div class="simple-finding {_e(tri_val)}">
+    <div class="finding-severity"><span class="dot"></span> {_e(severity_label)}</div>
+    <div class="finding-file" title="{_e(full_path)}">{_e(filename)}</div>
+    <div class="finding-what">{_e(f.description)}</div>
+    <div class="finding-action-box">
+        <strong>What to do</strong>
+        {wtd_text}
+    </div>
+    <details>
+        <summary>Technical details for your IT contact</summary>
+        <div class="tech-detail">
+            <p><strong>Pattern:</strong> {_e(f.pattern_name)}</p>
+            <p><strong>File:</strong> <span class="file-path">{_e(full_path)}:{f.line_number}</span></p>
+            <p><strong>Matched:</strong> <code>{matched_truncated}</code></p>
+            <p><strong>Remediation:</strong> {_e(f.remediation)}</p>
+        </div>
+    </details>
+</div>""")
+    return "\n".join(parts)
+
+
+def _render_simple_posture(checks: List[PostureCheck]) -> str:
+    """Render posture checks as a collapsed checklist."""
+    if not checks:
+        return ""
+    icon_map = {
+        "secure": "check-circle",
+        "warning": "alert-triangle",
+        "insecure": "x-circle",
+        "not_found": "info",
+        "advisory": "info",
+    }
+    items = []
+    for c in checks:
+        status = c.status if c.status in ("secure", "warning", "insecure", "not_found") else "not_found"
+        icon_name = icon_map.get(status, "info")
+        rec_html = ""
+        if c.recommendation:
+            rec_html = f"<br><em>{_e(c.recommendation)}</em>"
+        items.append(
+            f'<div class="checklist-item {_e(status)}">'
+            f'{_icon(icon_name, 18, 18)}'
+            f'<div><strong>{_e(c.tool_name)}</strong> &mdash; {_e(c.check_name)}{rec_html}</div>'
+            f'</div>'
+        )
+    return f"""<details>
+    <summary class="section-heading" style="border-bottom:none;cursor:pointer">Your AI Tool Security Checklist</summary>
+    <div class="checklist">
+        {"".join(items)}
+    </div>
+</details>"""
+
+
+def _render_get_help(findings: List[Finding], scan_target: str) -> str:
+    """Render the Get Help section with mailto and Claude Code prompt."""
+    if not findings:
+        return ""
+
+    # Build mailto
+    top_findings = findings[:3]
+    body_lines = [f"SecureClaw found {len(findings)} issue(s) in: {scan_target}", ""]
+    for i, f in enumerate(top_findings, 1):
+        body_lines.append(f"{i}. {f.pattern_name} in {Path(f.file_path).name} (line {f.line_number})")
+    body_lines.append("")
+    body_lines.append("Full report is attached.")
+    subject = urllib.parse.quote(f"SecureClaw scan results - {len(findings)} issue(s) found")
+    body = urllib.parse.quote("\n".join(body_lines))
+    mailto = f"mailto:?subject={subject}&body={body}"
+
+    # Build Claude Code prompt (only for findings with confidence >= 60)
+    fixable = [f for f in findings if f.confidence >= 60]
+    claude_section = ""
+    if fixable:
+        prompt_lines = ["Review and fix these SecureClaw findings:"]
+        for f in fixable:
+            prompt_lines.append(f"- {f.pattern_name} in {Path(f.file_path).name}:{f.line_number} -- {f.remediation}")
+        prompt_text = _e("\n".join(prompt_lines))
+        claude_section = f"""<div class="help-option">
+        <p><strong>Fix with Claude Code</strong></p>
+        <button class="help-btn secondary" onclick="var el=this.nextElementSibling;el.classList.toggle('visible')">Show prompt to copy</button>
+        <div class="copy-prompt">{prompt_text}</div>
+    </div>"""
+
+    return f"""<div class="get-help">
+    <h3>Get Help</h3>
+    <div class="help-option">
+        <p><strong>Share with your IT contact</strong></p>
+        <a class="help-btn primary" href="{mailto}">{_icon("mail", 14, 14)} Email this report</a>
+    </div>
+    {claude_section}
+</div>"""
+
+
 def _format_simple(result: ScanResult) -> str:
     """Simplified single-page report for non-technical users."""
-    return "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'></head><body>TODO</body></html>"
+    s = result.summary
+    now = datetime.now(timezone.utc).strftime("%b %d, %Y at %H:%M UTC")
+
+    scan_target = ""
+    if s.directories_scanned:
+        scan_target = s.directories_scanned[0]
+    elif result.file_results:
+        paths = sorted({str(fr.path.parent) for fr in result.file_results})
+        if paths:
+            scan_target = paths[0]
+
+    findings = result.findings or []
+    # Exclude suppressed findings entirely
+    visible_findings = [f for f in findings if f.triage != Triage.SUPPRESSED]
+    act_now_count = sum(1 for f in visible_findings if f.triage == Triage.ACT_NOW)
+    review_count = sum(1 for f in visible_findings if f.triage == Triage.REVIEW)
+
+    # Verdict
+    total_visible = act_now_count + review_count
+    if act_now_count > 0:
+        verdict_class = "danger"
+        verdict_icon = _icon("shield-alert", 36, 36)
+        verdict_text = f"{total_visible} issue{'s' if total_visible != 1 else ''} need{'s' if total_visible == 1 else ''} your attention"
+        verdict_sub = "We found patterns that could let AI tools be manipulated. See details below."
+    elif review_count > 0:
+        verdict_class = "warning"
+        verdict_icon = _icon("eye", 36, 36)
+        verdict_text = f"{review_count} item{'s' if review_count != 1 else ''} need{'s' if review_count == 1 else ''} your attention"
+        verdict_sub = "Nothing urgent, but a few things are worth a quick look."
+    else:
+        verdict_class = "clean"
+        verdict_icon = _icon("shield-check", 36, 36)
+        verdict_text = "Your files look clean"
+        verdict_sub = "No issues found. Run SecureClaw periodically to stay safe."
+
+    summary_html = _simple_summary_counts(act_now_count, review_count)
+    findings_html = _render_simple_findings(visible_findings)
+    posture_html = _render_simple_posture(result.posture_checks or [])
+    help_html = _render_get_help(visible_findings, scan_target)
+
+    findings_section = ""
+    if findings_html:
+        findings_section = f'<h2 class="section-heading">What We Found</h2>\n{findings_html}'
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SecureClaw Scan Report</title>
+{_simple_css()}
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="header">
+    <div class="header-left">
+        <img class="header-logo" src="data:image/png;base64,{_LOGO_B64}" alt="SecureClaw by Sparkry AI">
+    </div>
+    <span class="header-tagline">Scan Report &mdash; {_e(now)}</span>
+</header>
+<main id="main" class="container">
+    <div class="verdict-hero">
+        <div class="verdict-circle {verdict_class}">{verdict_icon}</div>
+        <p class="verdict-text">{verdict_text}</p>
+        <p class="verdict-sub">{verdict_sub}</p>
+    </div>
+    {summary_html}
+    {findings_section}
+    {posture_html}
+    {help_html}
+</main>
+<footer class="footer">
+    SecureClaw v{_e(result.tool_version)} by <a href="https://secureclaw.sparkry.ai">Sparkry AI</a><br>
+    {s.total_files_scanned} files scanned &middot; {s.patterns_checked} patterns checked
+</footer>
+</body>
+</html>"""
 
 
 def _format_detailed(result: ScanResult) -> str:
