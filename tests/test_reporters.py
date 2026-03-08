@@ -213,6 +213,107 @@ class TestHTMLCleanScan:
         assert "Sparkry AI" in html
 
 
+class TestHTMLSimpleMode:
+    """Tests for the simplified (Lauren-friendly) report mode."""
+
+    def test_simple_mode_is_valid_html(self):
+        html = format_html_report(_sample_result(), mode="simple")
+        assert html.startswith("<!DOCTYPE html>")
+        assert "</html>" in html
+
+    def test_simple_mode_no_tabs(self):
+        html = format_html_report(_sample_result(), mode="simple")
+        assert "tab-bar" not in html
+        assert "switchTab" not in html
+        assert "tab-panel" not in html
+
+    def test_simple_mode_no_filters(self):
+        html = format_html_report(_sample_result(), mode="simple")
+        assert "toolbar" not in html
+        assert "filter-triage" not in html
+        assert "filter-category" not in html
+        assert "exportCSV" not in html
+
+    def test_simple_mode_has_traffic_light_verdict(self):
+        html = format_html_report(_sample_result(), mode="simple")
+        assert "verdict-hero" in html
+
+    def test_simple_mode_danger_verdict(self):
+        html = format_html_report(_sample_result(), mode="simple")
+        assert "need" in html.lower() and "attention" in html.lower()
+
+    def test_simple_mode_clean_verdict(self):
+        result = ScanResult(
+            summary=ScanSummary(total_files_scanned=50, patterns_checked=28, scan_duration_seconds=0.5),
+            tool_version="1.2.0",
+        )
+        html = format_html_report(result, mode="simple")
+        assert "look clean" in html.lower() or "no issues" in html.lower()
+
+    def test_simple_mode_hides_suppressed(self):
+        html = format_html_report(_sample_result(), mode="simple")
+        assert "suppressed" not in html.lower()
+
+    def test_simple_mode_has_plain_english_findings(self):
+        html = format_html_report(_sample_result(), mode="simple")
+        assert "What to do" in html or "what-to-do" in html
+
+    def test_simple_mode_has_details_toggle_for_it(self):
+        html = format_html_report(_sample_result(), mode="simple")
+        assert "<details" in html
+        assert "Technical details" in html
+
+    def test_simple_mode_no_confidence_percentage(self):
+        html = format_html_report(_sample_result(), mode="simple")
+        assert "confidence-badge" not in html
+        assert "gauge" not in html
+
+    def test_simple_mode_has_share_with_it(self):
+        html = format_html_report(_sample_result(), mode="simple")
+        assert "mailto:" in html or "Share" in html
+
+    def test_simple_mode_has_posture_checklist(self):
+        html = format_html_report(_sample_result(), mode="simple")
+        assert "Claude Code" in html
+        assert "checklist" in html.lower() or "<details" in html
+
+    def test_simple_mode_self_contained(self):
+        html = format_html_report(_sample_result(), mode="simple")
+        assert "<style>" in html
+        assert "fonts.googleapis.com" not in html
+
+    def test_simple_mode_xss_safe(self):
+        result = _sample_result()
+        result.findings[0].matched_text = '<script>alert("xss")</script>'
+        html = format_html_report(result, mode="simple")
+        assert "&lt;script&gt;" in html
+        assert "<script>alert(" not in html
+
+    def test_simple_mode_branding(self):
+        html = format_html_report(_sample_result(), mode="simple")
+        assert "Sparkry AI" in html
+        assert "secureclaw.sparkry.ai" in html
+
+
+class TestHTMLDetailedModePreserved:
+    """Ensure --report-mode detailed is the unchanged tabbed dashboard."""
+
+    def test_detailed_mode_has_tabs(self):
+        html = format_html_report(_sample_result(), mode="detailed")
+        assert "tab-bar" in html
+        assert "switchTab" in html
+
+    def test_detailed_mode_has_filters(self):
+        html = format_html_report(_sample_result(), mode="detailed")
+        assert "toolbar" in html
+        assert "filter-triage" in html
+
+    def test_detailed_default_backward_compat(self):
+        """Calling without mode= should produce simple mode (new default)."""
+        html = format_html_report(_sample_result())
+        assert "tab-bar" not in html
+
+
 class TestColorModeDetection:
     """Tests for terminal color mode detection."""
 
