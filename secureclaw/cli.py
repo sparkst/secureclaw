@@ -30,7 +30,6 @@ from secureclaw.core.remediate import remediate_findings
 from secureclaw.core.scanner import Scanner, SKIP_DIRS
 from secureclaw.posture.analyzer import run_posture_analysis
 from secureclaw.reporters.terminal import Colors, format_terminal_report
-from secureclaw.gui import start_gui_server
 from secureclaw.reporters.html_report import format_html_report
 from secureclaw.reporters.json_report import format_json_report
 
@@ -769,9 +768,11 @@ def main(argv: Optional[List[str]] = None) -> None:
     args = parser.parse_args(argv)
 
     if not args.command:
-        # No subcommand: launch the GUI.
-        # CLI users always specify a subcommand (scan, fix, posture, etc.).
-        # Running bare "secureclaw" — whether from Finder or terminal — opens the GUI.
+        try:
+            from secureclaw.gui import start_gui_server
+        except ImportError:
+            parser.print_help()
+            sys.exit(EXIT_CLEAN)
         start_gui_server(port=0)
         sys.exit(EXIT_CLEAN)
 
@@ -782,6 +783,11 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     try:
         if args.command == "gui":
+            try:
+                from secureclaw.gui import start_gui_server
+            except ImportError:
+                print("GUI is not yet available. Use 'secureclaw scan' instead.", file=sys.stderr)
+                sys.exit(1)
             start_gui_server(port=getattr(args, "port", 0))
             sys.exit(EXIT_CLEAN)
         elif args.command == "scan":
