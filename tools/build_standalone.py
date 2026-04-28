@@ -31,6 +31,8 @@ SECTIONS = [
     ("Terminal Reporter", SRC / "reporters" / "terminal.py"),
     ("HTML Reporter", SRC / "reporters" / "html_report.py"),
     ("JSON Reporter", SRC / "reporters" / "json_report.py"),
+    ("Text Reporter", SRC / "reporters" / "text_report.py"),
+    ("GUI Server", SRC / "gui.py"),
     ("CLI", SRC / "cli.py"),
 ]
 
@@ -178,68 +180,52 @@ if __name__ == "__main__":
     main()
 ''')
 
-    # Write standalone
     DIST.mkdir(exist_ok=True)
     output = DIST / "secureclaw.py"
     content = "\n".join(parts)
-
-    # Fix the __version__ reference in cli.py code (it imports from secureclaw)
-    # The CLI uses `from secureclaw import __version__` which we stripped.
-    # __version__ is defined at the top, so it's already available.
-
     output.write_text(content, encoding="utf-8")
     return output
 
 
 def compute_sha256(path: Path) -> str:
     h = hashlib.sha256()
-    with open(path, "rb") as f:
+    with path.open("rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def _check_command(output: Path, *args: str) -> None:
+    """Run the standalone file with the given args and exit on failure."""
+    label = " ".join(args) if args else "--version"
+    result = subprocess.run(
+        [sys.executable, str(output), *args],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print(f"  ERROR: standalone {label} failed: {result.stderr}")
+        sys.exit(1)
+    out = result.stdout.strip()
+    print(f"  {label}: {out if out else 'OK'}")
 
 
 def main():
     print(f"Building SecureClaw v{VERSION} standalone...")
 
     output = build()
-    print(f"  Written: {output} ({output.stat().st_size:,} bytes, {sum(1 for _ in output.read_text().splitlines())} lines)")
+    line_count = sum(1 for _ in output.read_text(encoding="utf-8").splitlines())
+    print(f"  Written: {output} ({output.stat().st_size:,} bytes, {line_count} lines)")
 
-    # SHA256
     sha = compute_sha256(output)
     sums_path = DIST / "SHA256SUMS"
     sums_path.write_text(f"{sha}  secureclaw.py\n")
     print(f"  SHA256: {sha}")
 
-    # Test it
-    result = subprocess.run(
-        [sys.executable, str(output), "--version"],
-        capture_output=True, text=True
-    )
-    if result.returncode != 0:
-        print(f"  ERROR: standalone --version failed: {result.stderr}")
-        sys.exit(1)
-    print(f"  Version check: {result.stdout.strip()}")
-
-    # Test scan --help
-    result = subprocess.run(
-        [sys.executable, str(output), "scan", "--help"],
-        capture_output=True, text=True
-    )
-    if result.returncode != 0:
-        print(f"  ERROR: standalone scan --help failed: {result.stderr}")
-        sys.exit(1)
-    print(f"  scan --help: OK")
-
-    # Test fix --help
-    result = subprocess.run(
-        [sys.executable, str(output), "fix", "--help"],
-        capture_output=True, text=True
-    )
-    if result.returncode != 0:
-        print(f"  ERROR: standalone fix --help failed: {result.stderr}")
-        sys.exit(1)
-    print(f"  fix --help: OK")
+    _check_command(output, "--version")
+    _check_command(output, "scan", "--help")
+    _check_command(output, "fix", "--help")
+    _check_command(output, "gui", "--help")
 
     # Copy to site
     if SITE.exists():

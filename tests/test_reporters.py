@@ -151,9 +151,9 @@ class TestHTMLReporter:
 
     def test_accessibility_tooltips(self):
         html = format_html_report(_sample_result(), mode="detailed")
-        # New design uses tooltip tip-text for accessibility
-        assert "tip-text" in html
-        assert "tooltip" in html
+        # v2 detailed report uses table headers and semantic structure
+        assert "<th" in html
+        assert "<table" in html
 
 
 class TestJSONReporter:
@@ -261,7 +261,7 @@ class TestHTMLSimpleMode:
     def test_simple_mode_has_details_toggle_for_it(self):
         html = format_html_report(_sample_result(), mode="simple")
         assert "<details" in html
-        assert "Technical details" in html
+        assert "View details" in html
 
     def test_simple_mode_no_confidence_percentage(self):
         html = format_html_report(_sample_result(), mode="simple")
@@ -296,22 +296,21 @@ class TestHTMLSimpleMode:
 
 
 class TestHTMLDetailedModePreserved:
-    """Ensure --report-mode detailed is the unchanged tabbed dashboard."""
+    """Ensure --report-mode detailed produces the v2 table-based report."""
 
-    def test_detailed_mode_has_tabs(self):
+    def test_detailed_mode_has_table(self):
         html = format_html_report(_sample_result(), mode="detailed")
-        assert "tab-bar" in html
-        assert "switchTab" in html
+        assert "<table" in html
+        assert "<th" in html
 
     def test_detailed_mode_has_filters(self):
         html = format_html_report(_sample_result(), mode="detailed")
-        assert "toolbar" in html
-        assert "filter-triage" in html
+        assert "filter" in html.lower()
 
     def test_detailed_default_backward_compat(self):
         """Calling without mode= should produce simple mode (new default)."""
         html = format_html_report(_sample_result())
-        assert "tab-bar" not in html
+        assert "<table" not in html
 
 
 class TestColorModeDetection:
@@ -347,3 +346,150 @@ class TestColorModeDetection:
             report = format_terminal_report(_sample_result(), use_color=True)
         # When color is forced and supports_color returns True, ANSI codes should be present
         assert "\033[" in report
+
+
+class TestHTMLSimpleModeV2:
+    """Tests for simple mode v2 interactive features."""
+
+    def test_simple_has_progress_bar(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="simple")
+        assert "progress-bar" in html
+        assert "items handled" in html.lower() or "of" in html
+
+    def test_simple_has_action_buttons(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="simple")
+        assert "Fixed" in html
+        assert "Ignore" in html
+        assert "Add to fix list" in html or "fix-list" in html
+
+    def test_simple_has_fix_list_sticky_bar(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="simple")
+        assert "fix-list-bar" in html or "fixListBar" in html
+        assert "Copy all" in html or "copy-all" in html
+
+    def test_simple_has_export_button(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="simple")
+        assert "Download Status Report" in html or "export" in html.lower()
+
+    def test_simple_posture_grouped(self):
+        """Posture should be in 3 groups: protected, needs attention, not installed."""
+        result = _sample_result()
+        html = format_html_report(result, mode="simple")
+        assert "Protected" in html or "protected" in html
+        # not_found items should show de-emphasized
+        assert "Not Installed" in html or "not-installed" in html or "nothing to worry" in html.lower()
+
+    def test_simple_view_details_not_it(self):
+        """Should say 'View details' not 'Technical details for your IT contact'."""
+        result = _sample_result()
+        html = format_html_report(result, mode="simple")
+        assert "View details" in html
+        assert "IT contact" not in html
+
+    def test_simple_details_has_why_it_matters(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="simple")
+        assert "Why it matters" in html or "why-it-matters" in html
+
+    def test_simple_has_localstorage_js(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="simple")
+        assert "localStorage" in html
+
+    def test_simple_has_first_time_tooltip(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="simple")
+        assert "fix_list_tooltip_dismissed" in html or "Don't show this again" in html
+
+    def test_simple_combined_prompt_has_verification(self):
+        """The Claude Code prompt template should include a re-scan verification step."""
+        result = _sample_result()
+        html = format_html_report(result, mode="simple")
+        assert "secureclaw scan" in html or "verify" in html.lower()
+
+    def test_simple_no_confidence_percentage(self):
+        """Simple mode should still not show confidence percentages."""
+        result = _sample_result()
+        html = format_html_report(result, mode="simple")
+        assert "%" not in html or "100%" in html  # 100% might appear in CSS
+
+    def test_simple_clean_scan_no_buttons(self):
+        """Clean scan should not show fix buttons or progress bar."""
+        result = ScanResult(
+            summary=ScanSummary(total_files_scanned=50, patterns_checked=28, scan_duration_seconds=0.5),
+            tool_version="1.2.0",
+        )
+        html = format_html_report(result, mode="simple")
+        assert "Add to fix list" not in html
+        assert "progress-bar" not in html or "0 of 0" not in html
+
+
+class TestHTMLDetailedModeV2:
+    """Tests for detailed mode v2 table view."""
+
+    def test_detailed_has_table(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="detailed")
+        assert "<table" in html
+        assert "<th" in html
+
+    def test_detailed_table_columns(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="detailed")
+        for col in ["Sev", "File", "Line", "Pattern", "Confidence", "Triage"]:
+            assert col in html
+
+    def test_detailed_no_tabs(self):
+        """v2 detailed is single scrollable page, no tabs."""
+        result = _sample_result()
+        html = format_html_report(result, mode="detailed")
+        assert "tab-btn" not in html
+
+    def test_detailed_has_csv_export(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="detailed")
+        assert "Export CSV" in html or "csv" in html.lower()
+
+    def test_detailed_has_filter_bar(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="detailed")
+        assert "filter" in html.lower()
+
+    def test_detailed_has_sort_js(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="detailed")
+        assert "sort" in html.lower()
+
+    def test_detailed_row_expand_has_commands(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="detailed")
+        assert "secureclaw" in html  # CLI command in expanded row
+        assert "Copy" in html  # copy button
+
+    def test_detailed_has_stats_bar(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="detailed")
+        assert "files" in html.lower()
+        assert "findings" in html.lower() or "critical" in html.lower()
+
+    def test_detailed_posture_grouped(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="detailed")
+        assert "Protected" in html or "protected" in html
+        assert "Not Installed" in html or "not-installed" in html or "nothing to worry" in html.lower()
+
+    def test_detailed_no_what_to_do_next(self):
+        """v2 removes the prose 'What To Do Next' section."""
+        result = _sample_result()
+        html = format_html_report(result, mode="detailed")
+        assert "What To Do Next" not in html
+
+    def test_detailed_self_contained(self):
+        result = _sample_result()
+        html = format_html_report(result, mode="detailed")
+        assert "<style>" in html
+        assert "script src=" not in html

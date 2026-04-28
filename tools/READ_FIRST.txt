@@ -1,0 +1,21 @@
+SecureClaw — First-Time Setup
+==============================
+
+1. Drag SecureClaw.app to your Applications folder.
+2. Double-click to open it.
+
+macOS will show a warning because SecureClaw isn't from
+the App Store. Here's how to allow it (one time only):
+
+  → Open System Settings
+  → Click "Privacy & Security"
+  → Scroll down — you'll see "SecureClaw was blocked"
+  → Click "Open Anyway"
+  → Enter your password when prompted
+
+After that, double-click works normally every time.
+
+Privacy: SecureClaw runs 100% on your Mac. It makes zero network
+connections — your files never leave your computer.
+
+Questions? Visit https://secureclaw.sparkry.ai

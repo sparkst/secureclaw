@@ -5,6 +5,10 @@ dist/
 build/
 *.egg-info/
 .venv/
+.build-venv/
 .eggs/
 *.egg
 .pytest_cache/
+.ruff_cache/
+.DS_Store
+.qralph/
