@@ -770,6 +770,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     if not args.command:
         try:
             from secureclaw.gui import start_gui_server  # noqa: F811
+
             _gui_available = True
         except ImportError:
             _gui_available = False
@@ -788,6 +789,7 @@ def main(argv: Optional[List[str]] = None) -> None:
         if args.command == "gui":
             try:
                 from secureclaw.gui import start_gui_server  # noqa: F811
+
                 _gui_ok = True
             except ImportError:
                 _gui_ok = False

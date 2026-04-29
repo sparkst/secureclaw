@@ -27,7 +27,7 @@ jobs:
 
       - name: Install and test
         run: |
-          pip install -e .
+          pip install -e ".[dev]"
           python -m pytest tests/ -v --tb=short
 
   build:
