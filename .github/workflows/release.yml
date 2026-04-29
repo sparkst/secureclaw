@@ -41,7 +41,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Build
+      - name: Build wheel and sdist
         run: |
           pip install build
           python -m build
@@ -49,11 +49,19 @@ jobs:
       - name: Build standalone
         run: python tools/build_standalone.py
 
-      - name: Upload dist
+      - name: Upload wheel and sdist
         uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist/
+          name: pypi-dist
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+
+      - name: Upload standalone
+        uses: actions/upload-artifact@v4
+        with:
+          name: standalone
+          path: dist/secureclaw.py
 
   publish-pypi:
     needs: build
@@ -62,10 +70,10 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - name: Download dist
+      - name: Download wheel and sdist
         uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: pypi-dist
           path: dist/
 
       - name: Publish to PyPI
@@ -82,10 +90,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download dist
+      - name: Download wheel and sdist
         uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: pypi-dist
+          path: dist/
+
+      - name: Download standalone
+        uses: actions/download-artifact@v4
+        with:
+          name: standalone
           path: dist/
 
       - name: Create GitHub Release
