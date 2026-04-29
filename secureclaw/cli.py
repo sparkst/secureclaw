@@ -610,7 +610,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--report-mode",
         choices=["simple", "detailed"],
         default="simple",
-        help="HTML report style: simple (default, non-technical) or detailed (tabbed developer dashboard)",
+        help="HTML report style: simple (default, non-technical) or detailed",
     )
     scan_parser.add_argument(
         "--output",

@@ -5,12 +5,12 @@
 ### REQ-001: Simple Report Mode
 - The default HTML report mode presents a traffic-light verdict, finding cards with plain-English descriptions, and action buttons
 - Acceptance: Non-technical user can determine safety status in under 5 seconds
-- Status: In progress (v2 interactive features partially implemented)
+- Status: Complete (v2 interactive features implemented, all tests passing)
 
 ### REQ-002: Detailed Report Mode
 - `--report-mode detailed` produces a table-based report with filtering, confidence scores, and full technical context
 - Acceptance: All v1 information is accessible; filtering works
-- Status: In progress (migrated from tabbed to table layout)
+- Status: Complete (table layout with sort, filter, CSV export)
 
 ### REQ-003: Mac App Packaging
 - Native .app bundle via PyInstaller, ad-hoc signed, distributed as DMG with drag-to-Applications
@@ -26,6 +26,14 @@
 - `tools/build_standalone.py` produces a single `secureclaw.py` with SHA256 checksum
 - Acceptance: `python secureclaw.py scan <path>` works without pip install
 - Status: Complete
+
+### REQ-007: Browser-Based GUI (`secureclaw/gui.py`)
+- Local web server with visual scanning interface — launches when user double-clicks the Mac app or runs bare `secureclaw` with no subcommand
+- User picks a folder, sees scan progress, gets the simple-mode HTML report inline
+- No external dependencies beyond stdlib (`http.server`, `webbrowser`)
+- Acceptance: `secureclaw gui` opens browser to localhost, user selects folder, scan runs, results display in-page; Mac .app double-click opens the GUI automatically
+- Non-Goals: Cloud/remote scanning, multi-user, persistent state
+- Status: Complete (`secureclaw/gui.py` implemented, 17 tests passing)
 
 ## Backlog
 

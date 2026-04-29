@@ -244,7 +244,11 @@ class TestHTMLSimpleMode:
 
     def test_simple_mode_clean_verdict(self):
         result = ScanResult(
-            summary=ScanSummary(total_files_scanned=50, patterns_checked=28, scan_duration_seconds=0.5),
+            summary=ScanSummary(
+                total_files_scanned=50,
+                patterns_checked=28,
+                scan_duration_seconds=0.5,
+            ),
             tool_version="1.2.0",
         )
         html = format_html_report(result, mode="simple")
@@ -380,8 +384,9 @@ class TestHTMLSimpleModeV2:
         result = _sample_result()
         html = format_html_report(result, mode="simple")
         assert "Protected" in html or "protected" in html
-        # not_found items should show de-emphasized
-        assert "Not Installed" in html or "not-installed" in html or "nothing to worry" in html.lower()
+        assert (
+            "Not Installed" in html or "not-installed" in html or "nothing to worry" in html.lower()
+        )
 
     def test_simple_view_details_not_it(self):
         """Should say 'View details' not 'Technical details for your IT contact'."""
@@ -420,7 +425,11 @@ class TestHTMLSimpleModeV2:
     def test_simple_clean_scan_no_buttons(self):
         """Clean scan should not show fix buttons or progress bar."""
         result = ScanResult(
-            summary=ScanSummary(total_files_scanned=50, patterns_checked=28, scan_duration_seconds=0.5),
+            summary=ScanSummary(
+                total_files_scanned=50,
+                patterns_checked=28,
+                scan_duration_seconds=0.5,
+            ),
             tool_version="1.2.0",
         )
         html = format_html_report(result, mode="simple")
@@ -480,7 +489,9 @@ class TestHTMLDetailedModeV2:
         result = _sample_result()
         html = format_html_report(result, mode="detailed")
         assert "Protected" in html or "protected" in html
-        assert "Not Installed" in html or "not-installed" in html or "nothing to worry" in html.lower()
+        assert (
+            "Not Installed" in html or "not-installed" in html or "nothing to worry" in html.lower()
+        )
 
     def test_detailed_no_what_to_do_next(self):
         """v2 removes the prose 'What To Do Next' section."""

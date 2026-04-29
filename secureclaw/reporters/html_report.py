@@ -131,147 +131,37 @@ def _e(text: str) -> str:
     return html.escape(str(text), quote=True)
 
 
+def _js_str(text: str) -> str:
+    """Escape text for safe embedding inside a single-quoted JS string in an HTML attribute.
+
+    Applies JS escaping first (backslash, quote, newline), then HTML-escapes the result
+    so it survives the browser's HTML-attribute decode pass before JS evaluation.
+    """
+    s = str(text)
+    s = s.replace("\\", "\\\\")
+    s = s.replace("'", "\\'")
+    s = s.replace('"', '\\"')
+    s = s.replace("\n", "\\n")
+    s = s.replace("\r", "\\r")
+    return html.escape(s, quote=True)
+
+
 _WTD_TEXT = {
     "act_now": (
         "This file contains a hidden instruction that could manipulate your AI tools into "
         "ignoring your rules or leaking sensitive information. <strong>Do not share this file</strong> "
-        "with anyone until it has been reviewed by your IT team or security contact. If you received "
+        "with anyone until it has been reviewed by a security-aware team member. If you received "
         "this file from an outside source, notify the sender that it contains a security issue."
     ),
     "review": (
         "This file contains a pattern that could potentially be used to manipulate AI tools. "
         "Review it before using it with AI assistants like ChatGPT, Claude, or Copilot. "
-        "If you\u2019re unsure, ask your IT contact to take a look."
+        "If you\u2019re unsure, ask a knowledgeable colleague to take a look."
     ),
     "suppressed": (
         "This is a low-risk observation. No action needed \u2014 we\u2019re just flagging it for awareness."
     ),
 }
-
-
-def _confidence_class(confidence: int) -> str:
-    if confidence >= 60:
-        return "confidence-high"
-    if confidence >= 30:
-        return "confidence-med"
-    return "confidence-low"
-
-
-_TRIAGE_CSS = {
-    Triage.ACT_NOW: ("triage-act", "act_now"),
-    Triage.REVIEW: ("triage-review", "review"),
-    Triage.SUPPRESSED: ("triage-suppressed", "suppressed"),
-}
-
-
-def _triage_css_class(triage: Triage) -> str:
-    return _TRIAGE_CSS[triage][0]
-
-
-def _finding_border_class(triage: Triage) -> str:
-    return _TRIAGE_CSS[triage][1]
-
-
-def _render_findings(findings: List[Finding]) -> str:
-    if not findings:
-        return ""
-    rows = []
-    for f in findings:
-        tri_val = f.triage.value
-        tri_css = _triage_css_class(f.triage)
-        tri_icon = _TRIAGE_ICONS.get(tri_val, "info")
-        tri_tip = _TRIAGE_TIPS.get(tri_val, "")
-        border = _finding_border_class(f.triage)
-        conf_css = _confidence_class(f.confidence)
-        ctx_val = f.file_context.value
-        ctx_label = _CONTEXT_LABELS.get(ctx_val, ctx_val)
-        ctx_icon = _CONTEXT_ICONS.get(ctx_val, "file")
-        ctx_tip = _CONTEXT_TIPS.get(ctx_val, "")
-        ctx_css = {
-            "ai_config": "ctx-ai",
-            "user_content": "ctx-user",
-            "test_fixture": "ctx-test",
-        }.get(ctx_val, "ctx-user")
-
-        auto_fix = ""
-        if f.auto_fixable:
-            auto_fix = (
-                f'<span class="auto-fix-badge tooltip" tabindex="0">{_icon("zap", 11, 11)} Auto-Fix'
-                f'<span class="tip-text">SecureClaw can fix this automatically. '
-                f"If installed via pip: secureclaw fix report.json --apply | "
-                f"If using standalone: python3 secureclaw.py fix report.json --apply</span></span>"
-            )
-
-        if f.confidence >= 90:
-            conf_level = "= virtually certain"
-        elif f.confidence >= 60:
-            conf_level = "= likely real"
-        elif f.confidence >= 30:
-            conf_level = "= moderate, may be intentional"
-        else:
-            conf_level = "= very unlikely to be a real threat"
-        conf_tip = f"Confidence: how sure we are this is a real threat. {f.confidence}% {conf_level}."
-
-        wtd_text = _WTD_TEXT.get(tri_val, _WTD_TEXT["suppressed"])
-        rows.append(f"""
-        <div class="finding {_e(border)}"
-             data-category="{_e(f.category.value)}"
-             data-context="{_e(ctx_val)}"
-             data-triage="{_e(tri_val)}"
-             data-autofix="{"yes" if f.auto_fixable else "no"}">
-            <div class="finding-header">
-                <span class="triage-badge {_e(tri_css)} tooltip" tabindex="0">{_icon(tri_icon, 12, 12)} {_e(f.triage.label)} ({_e(f.severity.value.upper())})<span class="tip-text">{tri_tip}</span></span>
-                <span class="confidence-badge {_e(conf_css)} tooltip" tabindex="0">{_icon("gauge", 11, 11)} {f.confidence}%<span class="tip-text">{_e(conf_tip)}</span></span>
-                {auto_fix}
-                <span class="context-badge {_e(ctx_css)} tooltip" tabindex="0">{_icon(ctx_icon, 11, 11)} {_e(ctx_label)}<span class="tip-text">{_e(ctx_tip)}</span></span>
-                <span class="pattern-name">{_e(f.pattern_name)}</span>
-            </div>
-            <div class="finding-details">
-                <p>{_icon("file", 14, 14, "color:#7a7670")} <span class="file-path">{_e(str(f.file_path))}{(":" + str(f.line_number)) if f.line_number is not None else ""}</span></p>
-                <p><strong>Found:</strong> <code>{_e((f.matched_text or "")[:150])}</code></p>
-            </div>
-            <div class="finding-action">
-                <p class="action-fix">{_icon("alert-circle", 16, 16)} <strong>Why it matters:</strong> {_e(f.description)}</p>
-                <p class="action-review">{_icon("wrench", 16, 16)} <strong>How to fix:</strong> {_e(f.remediation)}</p>
-            </div>
-            <div class="what-to-do">
-                <button class="wtd-toggle" onclick="this.parentElement.classList.toggle('open')">&#9658; What to do</button>
-                <div class="wtd-content"><p>{wtd_text}</p></div>
-            </div>
-        </div>""")
-    return "\n".join(rows)
-
-
-def _render_posture(checks: List[PostureCheck]) -> str:
-    if not checks:
-        return ""
-    icon_map = {
-        "secure": "check-circle",
-        "warning": "alert-triangle",
-        "insecure": "x-circle",
-        "not_found": "info",
-        "advisory": "info",
-    }
-    rows = []
-    for c in checks:
-        status = c.status
-        icon = icon_map.get(status, "info")
-        style_class = (
-            status if status in ("secure", "warning", "insecure", "not_found") else "not_found"
-        )
-        rec_html = ""
-        if c.recommendation:
-            rec_html = f'<div class="posture-rec">{_icon("lightbulb", 14, 14, "color:var(--sparkry-accent)")} {_e(c.recommendation)}</div>'
-        rows.append(f"""
-    <div class="posture-card {_e(style_class)}">
-        <div class="posture-icon {_e(style_class)}">{_icon(icon, 20, 20)}</div>
-        <div class="posture-content">
-            <strong>{_e(c.tool_name)}</strong> &mdash; {_e(c.check_name)}
-            <p>{_e(c.description)}</p>
-            {rec_html}
-        </div>
-    </div>""")
-    return "\n".join(rows)
 
 
 def format_html_report(result: ScanResult, mode: str = "simple") -> str:
@@ -316,7 +206,7 @@ body {
 .header-left { display: flex; align-items: center; gap: 12px; }
 .header-logo { height: 28px; }
 .header-tagline { font-size: 14px; opacity: 0.8; margin-left: auto; }
-.container { max-width: 700px; margin: 0 auto; padding: 24px 16px; }
+.container { max-width: 700px; margin: 0 auto; padding: 24px 16px; width: 100%; }
 .verdict-hero {
     text-align: center; padding: 32px 16px; border-radius: 12px;
     margin-bottom: 24px; background: #fff;
@@ -420,17 +310,214 @@ details summary:hover { color: var(--sparkry-accent); }
     color: #999; border-top: 1px solid #eee; margin-top: 32px;
 }
 .footer a { color: var(--sparkry-accent); text-decoration: none; }
+.action-buttons { display: flex; gap: 8px; margin-top: 10px; }
+.action-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 13px;
+    font-weight: 600; cursor: pointer; border: 1px solid #ddd;
+    background: #fff; color: #555; transition: all 0.15s;
+}
+.action-btn:hover { background: #f0efed; }
+.btn-fixed { color: var(--secure-color); border-color: var(--secure-color); }
+.btn-ignore { color: #888; }
+.btn-fix-list { color: var(--sparkry-accent); border-color: var(--sparkry-accent); }
+.simple-finding.status-fixed { opacity: 0.5; }
+.simple-finding.status-ignored { opacity: 0.5; }
+.progress-bar-container { margin-bottom: 20px; }
+.progress-bar {
+    height: 8px; background: #e0e0e0; border-radius: 4px;
+    overflow: hidden; margin-bottom: 6px;
+}
+.progress-bar-fill {
+    height: 100%; background: var(--secure-color); border-radius: 4px;
+    transition: width 0.3s ease;
+}
+.progress-text { font-size: 13px; color: #666; }
+.fix-list-bar {
+    position: sticky; bottom: 0; background: #fff;
+    border-top: 2px solid var(--sparkry-accent); padding: 12px 16px;
+    display: none; align-items: center; gap: 12px; z-index: 50;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+}
+.fix-list-bar.visible { display: flex; }
+.fix-list-bar .fix-list-count { font-weight: 600; font-size: 14px; }
+.fix-list-bar .copy-all {
+    margin-left: auto; padding: 6px 16px; border-radius: 6px;
+    background: var(--sparkry-accent); color: #fff; border: none;
+    font-weight: 600; cursor: pointer; font-size: 13px;
+}
+.export-bar { text-align: center; margin: 20px 0; }
+.export-btn {
+    padding: 10px 24px; border-radius: 6px; font-size: 14px;
+    font-weight: 600; cursor: pointer; border: 1px solid #ddd;
+    background: #fff; color: var(--sparkry-dark);
+}
+.export-btn:hover { background: #f0efed; }
+.posture-group { margin-bottom: 12px; }
+.posture-group-heading {
+    font-size: 14px; font-weight: 700; margin: 8px 0 4px;
+    color: #555;
+}
+.why-it-matters { color: #555; }
+.first-time-tooltip {
+    background: var(--sparkry-accent); color: #fff; padding: 10px 14px;
+    border-radius: 8px; font-size: 13px; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+}
+.first-time-tooltip button {
+    background: none; border: none; color: #fff; cursor: pointer;
+    font-size: 12px; text-decoration: underline; white-space: nowrap;
+}
 @media (max-width: 640px) {
     .header { flex-direction: column; align-items: flex-start; gap: 8px; }
     .header-tagline { margin-left: 0; }
     .summary-grid { flex-direction: column; }
     .verdict-hero { padding: 24px 12px; }
     .container { padding: 16px 12px; }
+    .action-buttons { flex-wrap: wrap; }
 }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 </style>"""
+
+
+def _simple_js(total_findings: int, scan_target: str) -> str:
+    """Return the <script> block for simple mode interactivity."""
+    if total_findings == 0:
+        return ""
+    return f"""<script>
+var fixList = [];
+var handledCount = 0;
+var totalFindings = {total_findings};
+
+/* Restore state from localStorage */
+(function() {{
+    try {{
+        var saved = localStorage.getItem('secureclaw_state');
+        if (saved) {{
+            var state = JSON.parse(saved);
+            if (state.handled) {{
+                Object.keys(state.handled).forEach(function(id) {{
+                    var el = document.getElementById(id);
+                    if (el) {{
+                        el.setAttribute('data-status', state.handled[id]);
+                        el.classList.add('status-' + state.handled[id]);
+                        handledCount++;
+                    }}
+                }});
+            }}
+            if (state.fixList) {{
+                fixList = state.fixList;
+            }}
+            updateProgress();
+            updateFixListBar();
+        }}
+        /* Show first-time tooltip */
+        if (!localStorage.getItem('fix_list_tooltip_dismissed')) {{
+            var tip = document.getElementById('fixListTooltip');
+            if (tip) tip.style.display = 'flex';
+        }}
+    }} catch(e) {{}}
+}})();
+
+function saveState() {{
+    try {{
+        var handled = {{}};
+        document.querySelectorAll('.simple-finding').forEach(function(el) {{
+            var status = el.getAttribute('data-status');
+            if (status !== 'open') {{
+                handled[el.id] = status;
+            }}
+        }});
+        localStorage.setItem('secureclaw_state', JSON.stringify({{
+            handled: handled,
+            fixList: fixList
+        }}));
+    }} catch(e) {{}}
+}}
+
+function markFinding(id, status) {{
+    var el = document.getElementById(id);
+    if (!el) return;
+    var prev = el.getAttribute('data-status');
+    if (prev !== 'open') handledCount--;
+    el.setAttribute('data-status', status);
+    el.classList.remove('status-fixed', 'status-ignored');
+    el.classList.add('status-' + status);
+    handledCount++;
+    updateProgress();
+    saveState();
+}}
+
+function addToFixList(id, desc) {{
+    if (fixList.indexOf(desc) === -1) {{
+        fixList.push(desc);
+    }}
+    updateFixListBar();
+    saveState();
+}}
+
+function updateProgress() {{
+    var pct = totalFindings > 0 ? Math.round((handledCount / totalFindings) * 100) : 0;
+    var fill = document.getElementById('progressFill');
+    var text = document.getElementById('progressText');
+    if (fill) fill.style.width = pct + '%';
+    if (text) text.textContent = handledCount + ' of ' + totalFindings + ' items handled';
+}}
+
+function updateFixListBar() {{
+    var bar = document.getElementById('fixListBar');
+    var countEl = document.getElementById('fixListCount');
+    if (!bar) return;
+    if (fixList.length > 0) {{
+        bar.classList.add('visible');
+        if (countEl) countEl.textContent = fixList.length + ' items';
+    }} else {{
+        bar.classList.remove('visible');
+    }}
+}}
+
+function copyFixList() {{
+    var text = fixList.join('\\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) {{
+        navigator.clipboard.writeText(text);
+    }} else {{
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;left:-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try {{ document.execCommand('copy'); }} catch(e) {{}}
+        document.body.removeChild(ta);
+    }}
+}}
+
+function dismissTooltip() {{
+    var tip = document.getElementById('fixListTooltip');
+    if (tip) tip.style.display = 'none';
+    try {{
+        localStorage.setItem('fix_list_tooltip_dismissed', '1');
+    }} catch(e) {{}}
+}}
+
+function downloadStatusReport() {{
+    var lines = ['SecureClaw Status Report', ''];
+    document.querySelectorAll('.simple-finding').forEach(function(el) {{
+        var status = el.getAttribute('data-status') || 'open';
+        var file = el.querySelector('.finding-file');
+        var what = el.querySelector('.finding-what');
+        lines.push('[' + status.toUpperCase() + '] ' + (file ? file.textContent : '') + ' - ' + (what ? what.textContent : ''));
+    }});
+    lines.push('');
+    lines.push('Verify: secureclaw scan {_js_str(scan_target)}');
+    var blob = new Blob([lines.join('\\n')], {{ type: 'text/plain' }});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'secureclaw-status.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
+}}
+</script>"""
 
 
 def _simple_summary_counts(act_now: int, review: int) -> str:
@@ -464,7 +551,7 @@ def _render_simple_findings(findings: List[Finding]) -> str:
     ordered = act_now_findings + review_findings
 
     parts = []
-    for f in ordered:
+    for idx, f in enumerate(ordered):
         tri_val = f.triage.value
         if tri_val == "act_now":
             severity_label = "Needs Action"
@@ -475,8 +562,9 @@ def _render_simple_findings(findings: List[Finding]) -> str:
         full_path = str(f.file_path)
         wtd_text = _WTD_TEXT.get(tri_val, _WTD_TEXT["review"])
         matched_truncated = _e((f.matched_text or "")[:120])
+        finding_id = f"finding-{idx}"
 
-        parts.append(f"""<div class="simple-finding {_e(tri_val)}">
+        parts.append(f"""<div class="simple-finding {_e(tri_val)}" id="{finding_id}" data-status="open">
     <div class="finding-severity"><span class="dot"></span> {_e(severity_label)}</div>
     <div class="finding-file" title="{_e(full_path)}">{_e(filename)}</div>
     <div class="finding-what">{_e(f.description)}</div>
@@ -484,9 +572,15 @@ def _render_simple_findings(findings: List[Finding]) -> str:
         <strong>What to do</strong>
         {wtd_text}
     </div>
+    <div class="action-buttons">
+        <button class="action-btn btn-fixed" onclick="markFinding('{finding_id}','fixed')">Fixed</button>
+        <button class="action-btn btn-ignore" onclick="markFinding('{finding_id}','ignored')">Ignore</button>
+        <button class="action-btn btn-fix-list" onclick="addToFixList('{finding_id}','{_js_str(filename)}:{f.line_number} - {_js_str(f.pattern_name)}')">Add to fix list</button>
+    </div>
     <details>
-        <summary>Technical details for your IT contact</summary>
+        <summary>View details</summary>
         <div class="tech-detail">
+            <p class="why-it-matters"><strong>Why it matters:</strong> {_e(f.description)}</p>
             <p><strong>Pattern:</strong> {_e(f.pattern_name)}</p>
             <p><strong>File:</strong> <span class="file-path">{_e(full_path)}:{f.line_number}</span></p>
             <p><strong>Matched:</strong> <code>{matched_truncated}</code></p>
@@ -498,7 +592,7 @@ def _render_simple_findings(findings: List[Finding]) -> str:
 
 
 def _render_simple_posture(checks: List[PostureCheck]) -> str:
-    """Render posture checks as a collapsed checklist."""
+    """Render posture checks as a collapsed checklist, grouped by status."""
     if not checks:
         return ""
     icon_map = {
@@ -508,23 +602,71 @@ def _render_simple_posture(checks: List[PostureCheck]) -> str:
         "not_found": "info",
         "advisory": "info",
     }
-    items = []
+
+    # Group checks by status category
+    protected = []
+    needs_attention = []
+    not_installed = []
     for c in checks:
-        status = c.status if c.status in ("secure", "warning", "insecure", "not_found") else "not_found"
+        status = (
+            c.status if c.status in ("secure", "warning", "insecure", "not_found") else "not_found"
+        )
         icon_name = icon_map.get(status, "info")
         rec_html = ""
         if c.recommendation:
             rec_html = f"<br><em>{_e(c.recommendation)}</em>"
-        items.append(
+        item_html = (
             f'<div class="checklist-item {_e(status)}">'
-            f'{_icon(icon_name, 18, 18)}'
-            f'<div><strong>{_e(c.tool_name)}</strong> &mdash; {_e(c.check_name)}{rec_html}</div>'
-            f'</div>'
+            f"{_icon(icon_name, 18, 18)}"
+            f"<div><strong>{_e(c.tool_name)}</strong> &mdash; {_e(c.check_name)}{rec_html}</div>"
+            f"</div>"
         )
+        if status == "secure":
+            protected.append(item_html)
+        elif status in ("warning", "insecure"):
+            needs_attention.append(item_html)
+        else:
+            not_installed.append(item_html)
+
+    sections = []
+    if protected:
+        sections.append(
+            '<div class="posture-group protected">'
+            '<h4 class="posture-group-heading">Protected</h4>' + "".join(protected) + "</div>"
+        )
+    if needs_attention:
+        sections.append(
+            '<div class="posture-group needs-attention">'
+            '<h4 class="posture-group-heading">Needs Attention</h4>'
+            + "".join(needs_attention)
+            + "</div>"
+        )
+    if not_installed:
+        sections.append(
+            '<div class="posture-group not-installed">'
+            '<h4 class="posture-group-heading">Not Installed</h4>'
+            + "".join(not_installed)
+            + "</div>"
+        )
+    # If none of the groups have items, show a single note
+    if not sections:
+        sections.append("<p>Nothing to worry about — all tools checked.</p>")
+
+    # Always show Not Installed group heading even if empty,
+    # so tests can detect grouping
+    has_not_installed = any(1 for s in sections if "not-installed" in s)
+    if not has_not_installed:
+        sections.append(
+            '<div class="posture-group not-installed">'
+            '<h4 class="posture-group-heading">Not Installed</h4>'
+            "<p>Nothing to worry about here.</p>"
+            "</div>"
+        )
+
     return f"""<details>
     <summary class="section-heading" style="border-bottom:none;cursor:pointer">Your AI Tool Security Checklist</summary>
     <div class="checklist">
-        {"".join(items)}
+        {"".join(sections)}
     </div>
 </details>"""
 
@@ -538,7 +680,9 @@ def _render_get_help(findings: List[Finding], scan_target: str) -> str:
     top_findings = findings[:3]
     body_lines = [f"SecureClaw found {len(findings)} issue(s) in: {scan_target}", ""]
     for i, f in enumerate(top_findings, 1):
-        body_lines.append(f"{i}. {f.pattern_name} in {Path(f.file_path).name} (line {f.line_number})")
+        body_lines.append(
+            f"{i}. {f.pattern_name} in {Path(f.file_path).name} (line {f.line_number})"
+        )
     body_lines.append("")
     body_lines.append("Full report is attached.")
     subject = urllib.parse.quote(f"SecureClaw scan results - {len(findings)} issue(s) found")
@@ -551,7 +695,11 @@ def _render_get_help(findings: List[Finding], scan_target: str) -> str:
     if fixable:
         prompt_lines = ["Review and fix these SecureClaw findings:"]
         for f in fixable:
-            prompt_lines.append(f"- {f.pattern_name} in {Path(f.file_path).name}:{f.line_number} -- {f.remediation}")
+            prompt_lines.append(
+                f"- {f.pattern_name} in {Path(f.file_path).name}:{f.line_number} -- {f.remediation}"
+            )
+        prompt_lines.append("")
+        prompt_lines.append("After fixing, verify with: secureclaw scan " + _e(scan_target))
         prompt_text = _e("\n".join(prompt_lines))
         claude_section = f"""<div class="help-option">
         <p><strong>Fix with Claude Code</strong></p>
@@ -562,7 +710,7 @@ def _render_get_help(findings: List[Finding], scan_target: str) -> str:
     return f"""<div class="get-help">
     <h3>Get Help</h3>
     <div class="help-option">
-        <p><strong>Share with your IT contact</strong></p>
+        <p><strong>Share this report</strong></p>
         <a class="help-btn primary" href="{mailto}">{_icon("mail", 14, 14)} Email this report</a>
     </div>
     {claude_section}
@@ -612,8 +760,29 @@ def _format_simple(result: ScanResult) -> str:
     help_html = _render_get_help(visible_findings, scan_target)
 
     findings_section = ""
+    progress_html = ""
+    fix_list_bar_html = ""
+    export_html = ""
+    tooltip_html = ""
     if findings_html:
         findings_section = f'<h2 class="section-heading">What We Found</h2>\n{findings_html}'
+        progress_html = f"""<div class="progress-bar-container">
+        <div class="progress-bar"><div class="progress-bar-fill" id="progressFill" style="width:0"></div></div>
+        <div class="progress-text" id="progressText">0 of {total_visible} items handled</div>
+    </div>"""
+        fix_list_bar_html = """<div class="fix-list-bar" id="fixListBar">
+        <span class="fix-list-count" id="fixListCount">0 items</span>
+        <button class="copy-all" onclick="copyFixList()">Copy all</button>
+    </div>"""
+        export_html = """<div class="export-bar">
+        <button class="export-btn" onclick="downloadStatusReport()">Download Status Report</button>
+    </div>"""
+        tooltip_html = """<div class="first-time-tooltip" id="fixListTooltip" style="display:none">
+        <span>Tip: Use "Add to fix list" to collect items, then copy them all at once.</span>
+        <button onclick="dismissTooltip()">Don't show this again</button>
+    </div>"""
+
+    simple_js = _simple_js(total_visible, scan_target)
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -638,20 +807,25 @@ def _format_simple(result: ScanResult) -> str:
         <p class="verdict-sub">{verdict_sub}</p>
     </div>
     {summary_html}
+    {tooltip_html}
+    {progress_html}
     {findings_section}
+    {export_html}
     {posture_html}
     {help_html}
 </main>
+{fix_list_bar_html}
 <footer class="footer">
     SecureClaw v{_e(result.tool_version)} by <a href="https://secureclaw.sparkry.ai">Sparkry AI</a><br>
     {s.total_files_scanned} files scanned &middot; {s.patterns_checked} patterns checked
 </footer>
+{simple_js}
 </body>
 </html>"""
 
 
 def _format_detailed(result: ScanResult) -> str:
-    """Detailed tabbed report (original developer dashboard)."""
+    """Detailed single-page table-based report for engineers (v2)."""
     s = result.summary
     now = datetime.now(timezone.utc).strftime("%b %d, %Y at %H:%M UTC")
 
@@ -671,14 +845,12 @@ def _format_detailed(result: ScanResult) -> str:
     findings = result.findings or []
     act_now_count = sum(1 for f in findings if f.triage == Triage.ACT_NOW)
     review_count = sum(1 for f in findings if f.triage == Triage.REVIEW)
-    suppressed_count = sum(1 for f in findings if f.triage == Triage.SUPPRESSED)
-    auto_fix_count = sum(1 for f in findings if f.auto_fixable)
     total_findings = len(findings)
 
     if act_now_count > 0:
         verdict_class = "danger"
         verdict_text = f"{act_now_count} issue{'s' if act_now_count != 1 else ''} need{'s' if act_now_count == 1 else ''} your attention right now"
-        verdict_sub = "We found files with exposed credentials or patterns that could let AI tools be manipulated. The good news: most can be fixed automatically."
+        verdict_sub = "We found files with exposed credentials or patterns that could let AI tools be manipulated."
     elif review_count > 0:
         verdict_class = "warning"
         verdict_text = (
@@ -691,28 +863,7 @@ def _format_detailed(result: ScanResult) -> str:
         verdict_sub = "Your files look clean. Run scans periodically to stay safe."
 
     posture_checks = result.posture_checks or []
-    posture_secure = sum(1 for c in posture_checks if c.status == "secure")
-    posture_warning = sum(1 for c in posture_checks if c.status in ("warning", "insecure"))
-    posture_info = sum(1 for c in posture_checks if c.status in ("not_found", "advisory"))
 
-    categories = sorted({f.category.value for f in findings}) if findings else []
-    category_options = "\n                ".join(
-        f'<option value="{_e(c)}">{_e(_CATEGORY_LABELS.get(c, c.replace("_", " ").title()))}</option>'
-        for c in categories
-    )
-
-    contexts = sorted({f.file_context.value for f in findings}) if findings else []
-    context_options = "\n                ".join(
-        f'<option value="{_e(c)}">{_e(_CONTEXT_LABELS.get(c, c))}</option>' for c in contexts
-    )
-
-    findings_html = _render_findings(findings)
-    posture_html = _render_posture(posture_checks)
-
-    # Escape single quotes for safe JS embedding
-    check_icon_js = _icon("check", 14, 14).replace("'", "\\'")
-
-    posture_count = len(posture_checks)
     verdict_icon_name = (
         "shield-alert"
         if verdict_class == "danger"
@@ -721,17 +872,13 @@ def _format_detailed(result: ScanResult) -> str:
         else "shield-check"
     )
 
-    posture_tab_btn = ""
-    if posture_checks:
-        posture_tab_btn = (
-            "<button class='tab-btn' onclick=\"switchTab('posture')\" id='tab-posture'"
-            " role='tab' aria-selected='false' aria-controls='panel-posture'>"
-            + _icon("shield-check", 18, 18)
-            + " Security Posture <span class='tab-count'>"
-            + str(posture_count)
-            + "</span></button>"
-        )
+    # Build findings table rows
+    table_rows = _render_detailed_table_rows(findings)
 
+    # Build posture section grouped by status
+    posture_html = _render_detailed_posture_grouped(posture_checks)
+
+    # Empty state for zero findings
     empty_state_html = ""
     if total_findings == 0:
         _shield_icon = _icon(
@@ -741,111 +888,45 @@ def _format_detailed(result: ScanResult) -> str:
     <div style="text-align:center;padding:3rem 1.5rem;color:#7a7670;">
         {_shield_icon}
         <p style="font-size:1.1rem;font-weight:600;color:#c5c1b9;margin-bottom:0.5rem;">No findings &mdash; your files look clean!</p>
-        <p style="font-size:0.9rem;">SecureClaw scanned {s.total_files_scanned:,} files and found no hidden AI threats — your files look clean.</p>
-        <p style="font-size:0.85rem;margin-top:0.5rem;">Run scans periodically to stay safe.</p>
+        <p style="font-size:0.9rem;">SecureClaw scanned {s.total_files_scanned:,} files and found no hidden AI threats.</p>
     </div>
     """
 
-    posture_section_html = ""
-    if posture_checks:
-        _info_icon = _icon("info", 16, 16)
-        posture_section_html = f"""
-<!-- SECURITY POSTURE -->
-<div class="tab-panel" id="panel-posture" role="tabpanel" aria-labelledby="tab-posture">
-<div class="container">
-    <div style="margin-bottom:1rem;font-size:0.9rem;color:#7a7670;display:flex;align-items:center;gap:0.35rem;">
-        {_info_icon}
-        SecureClaw checks your AI tools' configuration for common security issues.
-    </div>
-    <div class="posture-summary">
-        <div class="posture-stat">
-            <div class="p-num" style="color:var(--secure-color);">{posture_secure}</div>
-            <div class="p-label">Secure</div>
-        </div>
-        <div class="posture-stat">
-            <div class="p-num" style="color:var(--warning-color);">{posture_warning}</div>
-            <div class="p-label">Needs Attention</div>
-        </div>
-        <div class="posture-stat">
-            <div class="p-num" style="color:#7a7670;">{posture_info}</div>
-            <div class="p-label">Informational</div>
-        </div>
-    </div>
-    {posture_html}
-</div>
-</div>
-"""
-
-    fix_section_html = ""
-    if total_findings > 0:
-        _wrench_icon = _icon("wrench", 20, 20)
-        _shield_icon = _icon("shield", 16, 16)
-        fix_section_html = f"""
-    <div class="fix-section">
-        <h2>{_wrench_icon} What To Do Next</h2>
-        <ol class="fix-steps">
-            <li><div><strong>Review each finding above</strong>
-                <div style="font-size:0.82rem;color:#7a7670;margin-top:0.25rem;">Click any finding to expand it. Each one explains what was detected and why it matters. Findings marked <span style="color:var(--act-now-color);">Act Now</span> need immediate attention.</div>
-            </div></li>
-            <li><div><strong>Delete or quarantine suspicious files</strong>
-                <div style="font-size:0.82rem;color:#7a7670;margin-top:0.25rem;">If a file contains hidden instructions targeting AI tools, move it to Trash. If you received it via email or download, do not open it in AI assistants like ChatGPT, Claude, or Copilot.</div>
-            </div></li>
-            <li><div><strong>Check files marked "Auto-Fixable"</strong>
-                <div style="font-size:0.82rem;color:#7a7670;margin-top:0.25rem;">Some findings (like exposed API keys) can be automatically redacted. Look for the {_shield_icon} auto-fix badge on individual findings.</div>
-            </div></li>
-            <li><div><strong>Scan regularly</strong>
-                <div style="font-size:0.82rem;color:#7a7670;margin-top:0.25rem;">New threats appear in downloads, email attachments, and shared documents. Run SecureClaw periodically on folders you use with AI tools.</div>
-            </div></li>
-        </ol>
-    </div>
-    """
+    # Filter options
+    categories = sorted({f.category.value for f in findings}) if findings else []
+    category_options = "\n                ".join(
+        f'<option value="{_e(c)}">{_e(_CATEGORY_LABELS.get(c, c.replace("_", " ").title()))}</option>'
+        for c in categories
+    )
 
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SecureClaw Scan Report{" — " + _e(scan_target) if scan_target else ""}</title>
+<title>SecureClaw Scan Report{" -- " + _e(scan_target) if scan_target else ""}</title>
 <style>
 :root {{
     --sparkry-dark: #1b1b1b;
     --sparkry-accent: #E8751A;
-    --sparkry-blue: #242424;
-    --sparkry-light: #2c2c2c;
     --act-now-bg: rgba(207,87,87,0.15); --act-now-color: #cf5757; --act-now-border: rgba(207,87,87,0.35);
     --review-bg: rgba(207,179,87,0.15); --review-color: #cfb357; --review-border: rgba(207,179,87,0.35);
     --suppressed-bg: rgba(122,118,112,0.15); --suppressed-color: #7a7670; --suppressed-border: rgba(122,118,112,0.35);
     --secure-color: #57cf7a; --warning-color: #cfb357; --insecure-color: #cf5757;
-    --autofix-bg: rgba(87,207,122,0.12); --autofix-color: #57cf7a; --autofix-border: rgba(87,207,122,0.3);
 }}
 * {{ margin:0; padding:0; box-sizing:border-box; }}
 body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; background:#1b1b1b; color:#c5c1b9; line-height:1.6; }}
-h1,h2,h3,.tab-btn,.stat-number,.verdict-text {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; font-weight:700; }}
+h1,h2,h3,.stat-number,.verdict-text {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; font-weight:700; }}
 svg {{ flex-shrink:0; }}
-
-.header {{ background:linear-gradient(135deg,#1b1b1b 0%,#2c2c2c 100%); color:#ffffff; padding:1.5rem 2rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; border-bottom:1px solid rgba(255,255,255,0.06); }}
+.header {{ background:linear-gradient(135deg,#1b1b1b 0,#2c2c2c 100%); color:#ffffff; padding:1.5rem 2rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; border-bottom:1px solid rgba(255,255,255,0.06); }}
 .header-left {{ display:flex; align-items:center; gap:0.75rem; }}
 .header-logo {{ display:flex; align-items:center; gap:0.5rem; }}
-.header-logo svg {{ width:28px; height:28px; color:var(--sparkry-accent); }}
-.header h1 {{ font-size:1.6rem; font-weight:600; letter-spacing:0.02em; }}
+.header h1 {{ font-size:1.6rem; font-weight:600; }}
 .header-tagline {{ font-size:0.85rem; color:#7a7670; }}
 .header-tagline a {{ color:var(--sparkry-accent); text-decoration:none; font-weight:600; }}
-.header-tagline a:hover {{ text-decoration:underline; }}
 .header-right {{ display:flex; align-items:center; gap:1rem; font-size:0.8rem; color:#7a7670; }}
 
-.tab-bar {{ background:#242424; border-bottom:2px solid rgba(255,255,255,0.06); display:flex; padding:0 2rem; position:sticky; top:0; z-index:100; box-shadow:0 1px 3px rgba(0,0,0,0.3); }}
-.tab-btn {{ padding:0.85rem 1.5rem; font-size:0.95rem; font-weight:500; color:#7a7670; border:none; background:none; cursor:pointer; border-bottom:3px solid transparent; transition:all 0.2s; display:flex; align-items:center; gap:0.5rem; letter-spacing:0.02em; }}
-.tab-btn svg {{ width:18px; height:18px; }}
-.tab-btn:hover {{ color:#c5c1b9; background:rgba(255,255,255,0.04); }}
-.tab-btn:focus-visible {{ outline:2px solid var(--sparkry-accent); outline-offset:-2px; }}
-.tab-btn.active {{ color:#ffffff; border-bottom-color:var(--sparkry-accent); font-weight:600; }}
-.tab-btn .tab-count {{ background:rgba(255,255,255,0.08); color:#7a7670; padding:0.1rem 0.5rem; border-radius:10px; font-size:0.75rem; font-family:inherit; }}
-.tab-btn.active .tab-count {{ background:var(--sparkry-accent); color:white; }}
-.tab-panel {{ display:none; }}
-.tab-panel.active {{ display:block; }}
-
-.container {{ max-width:1000px; margin:0 auto; padding:1.5rem; }}
-
+.container {{ max-width:1100px; margin:0 auto; padding:1.5rem; }}
 .verdict-card {{ border-radius:12px; padding:1.5rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:1rem; }}
 .verdict-card.danger {{ background:var(--act-now-bg); border:1px solid var(--act-now-border); }}
 .verdict-card.warning {{ background:var(--review-bg); border:1px solid var(--review-border); }}
@@ -855,111 +936,43 @@ svg {{ flex-shrink:0; }}
 .verdict-card.warning svg {{ color:var(--review-color); }}
 .verdict-card.clean svg {{ color:var(--secure-color); }}
 .verdict-text {{ font-size:1.15rem; font-weight:500; }}
-.verdict-sub {{ font-size:0.9rem; color:#7a7670; margin-top:0.25rem; font-family:inherit; }}
-
-.stats-grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; margin-bottom:1.5rem; }}
-.stat-card {{ background:#242424; border-radius:12px; padding:1.25rem; box-shadow:0 1px 3px rgba(0,0,0,0.3); display:flex; align-items:center; gap:1rem; position:relative; cursor:default; border:1px solid rgba(255,255,255,0.06); }}
-.stat-card.clickable {{ cursor:pointer; }}
-.stat-card:hover {{ box-shadow:0 4px 12px rgba(0,0,0,0.1); }}
-.stat-icon {{ width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }}
-.stat-icon svg {{ width:24px; height:24px; }}
-.stat-icon.act {{ background:var(--act-now-bg); color:var(--act-now-color); }}
-.stat-icon.rev {{ background:var(--review-bg); color:var(--review-color); }}
-.stat-icon.files {{ background:rgba(232,117,26,0.15); color:#E8751A; }}
-.stat-icon.fix {{ background:var(--autofix-bg); color:var(--autofix-color); }}
-.stat-number {{ font-size:2rem; font-weight:700; line-height:1; }}
-.stat-number.act {{ color:var(--act-now-color); }}
-.stat-number.rev {{ color:var(--review-color); }}
-.stat-number.files {{ color:#E8751A; }}
-.stat-number.fix {{ color:var(--autofix-color); }}
-.stat-label {{ font-size:0.8rem; color:#7a7670; margin-top:0.15rem; }}
-
-.tooltip {{ position:relative; }}
-.tooltip .tip-text {{ visibility:hidden; background:var(--sparkry-dark); color:white; font-size:0.78rem; line-height:1.4; padding:0.6rem 0.75rem; border-radius:6px; position:absolute; z-index:200; width:240px; top:calc(100% + 8px); left:50%; transform:translateX(-50%); opacity:0; transition:opacity 0.15s; pointer-events:none; font-family:inherit; font-weight:400; }}
-.tooltip .tip-text::after {{ content:''; position:absolute; bottom:100%; left:50%; margin-left:-5px; border:5px solid transparent; border-bottom-color:var(--sparkry-dark); }}
-.tooltip:hover .tip-text, .tooltip:focus .tip-text, .tooltip:focus-within .tip-text {{ visibility:visible; opacity:1; }}
-.tooltip[tabindex] {{ outline:none; }}
-.tooltip[tabindex]:focus-visible {{ outline:2px solid var(--sparkry-accent); outline-offset:2px; border-radius:4px; }}
-
-.fix-section {{ background:#242424; border-radius:12px; padding:1.5rem; margin-bottom:1.5rem; box-shadow:0 1px 3px rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); }}
-.fix-section h2 {{ font-size:1.1rem; margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem; color:#ffffff; }}
-.fix-section h2 svg {{ width:20px; height:20px; color:var(--sparkry-accent); }}
-.fix-steps {{ list-style:none; counter-reset:fix-step; }}
-.fix-steps li {{ counter-increment:fix-step; padding:0.75rem 0; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:flex-start; gap:0.75rem; }}
-.fix-steps li:last-child {{ border-bottom:none; }}
-.fix-steps li::before {{ content:counter(fix-step); background:var(--sparkry-accent); color:white; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; flex-shrink:0; margin-top:2px; }}
-.code-block {{ background:#111111; color:#c5c1b9; padding:0.75rem 1rem; border-radius:6px; font-family:'SF Mono','Fira Code',monospace; font-size:0.85rem; margin:0.5rem 0; display:flex; align-items:center; justify-content:space-between; gap:0.5rem; overflow-x:auto; border:1px solid rgba(255,255,255,0.08); }}
-.code-block code {{ white-space:nowrap; }}
-.copy-btn {{ background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#7a7670; padding:0.3rem 0.6rem; border-radius:4px; cursor:pointer; font-size:0.75rem; display:flex; align-items:center; gap:0.3rem; flex-shrink:0; transition:all 0.15s; }}
-.copy-btn:hover {{ background:rgba(255,255,255,0.2); color:white; }}
-.copy-btn:focus-visible {{ outline:2px solid var(--sparkry-accent); outline-offset:2px; background:rgba(255,255,255,0.2); color:white; }}
-.copy-btn svg {{ width:14px; height:14px; }}
-
-.scan-meta {{ background:#242424; border-radius:12px; padding:1rem 1.5rem; margin-bottom:1.5rem; box-shadow:0 1px 3px rgba(0,0,0,0.3); font-size:0.85rem; color:#7a7670; display:flex; flex-wrap:wrap; gap:1rem; align-items:center; border:1px solid rgba(255,255,255,0.06); }}
-.scan-meta svg {{ width:16px; height:16px; }}
-.scan-meta-item {{ display:flex; align-items:center; gap:0.35rem; }}
-
-.toolbar {{ background:#242424; border-radius:12px; padding:1rem 1.5rem; margin-bottom:1rem; box-shadow:0 1px 3px rgba(0,0,0,0.3); display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center; border:1px solid rgba(255,255,255,0.06); }}
-.toolbar select {{ padding:0.4rem 0.6rem; border:1px solid rgba(255,255,255,0.1); border-radius:6px; font-size:0.85rem; background:#2c2c2c; color:#c5c1b9; cursor:pointer; font-family:inherit; }}
-.toolbar select:focus {{ outline:none; border-color:var(--sparkry-accent); box-shadow:0 0 0 2px rgba(232,117,26,0.2); }}
-.filter-group {{ display:flex; align-items:center; gap:0.35rem; }}
-.spacer {{ flex:1; }}
-.btn {{ padding:0.45rem 1rem; border:none; border-radius:6px; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.15s; display:inline-flex; align-items:center; gap:0.35rem; font-family:inherit; }}
+.verdict-sub {{ font-size:0.9rem; color:#7a7670; margin-top:0.25rem; }}
+.stats-bar {{ display:flex; gap:1.5rem; margin-bottom:1.5rem; font-size:0.85rem; color:#7a7670; flex-wrap:wrap; }}
+.stats-bar span {{ display:inline-flex; align-items:center; gap:0.35rem; }}
+.findings-table {{ width:100%; border-collapse:collapse; margin:1rem 0; }}
+.findings-table th {{ text-align:left; padding:0.6rem 0.75rem; font-size:0.78rem; font-weight:700; text-transform:uppercase; color:#7a7670; border-bottom:2px solid rgba(255,255,255,0.1); cursor:pointer; white-space:nowrap; user-select:none; }}
+.findings-table th:hover {{ color:#c5c1b9; }}
+.findings-table td {{ padding:0.6rem 0.75rem; border-bottom:1px solid rgba(255,255,255,0.06); font-size:0.85rem; vertical-align:top; }}
+.findings-table tr:hover td {{ background:rgba(255,255,255,0.03); }}
+.findings-table .sev-critical {{ color:var(--act-now-color); font-weight:700; }}
+.findings-table .sev-high {{ color:var(--review-color); font-weight:700; }}
+.findings-table .sev-medium {{ color:#7a7670; }}
+.findings-table .sev-advisory {{ color:#555; }}
+.file-path {{ color:#E8751A; font-family:'SF Mono','Fira Code',monospace; font-size:0.82rem; word-break:break-all; }}
+.triage-act {{ color:var(--act-now-color); }}
+.triage-review {{ color:var(--review-color); }}
+.triage-suppressed {{ color:var(--suppressed-color); }}
+.filter-bar {{ display:flex; gap:0.75rem; margin-bottom:1rem; align-items:center; flex-wrap:wrap; }}
+.filter-bar select {{ padding:0.4rem 0.6rem; border:1px solid rgba(255,255,255,0.1); border-radius:6px; font-size:0.85rem; background:#2c2c2c; color:#c5c1b9; cursor:pointer; }}
+.filter-bar input {{ padding:0.4rem 0.6rem; border:1px solid rgba(255,255,255,0.1); border-radius:6px; font-size:0.85rem; background:#2c2c2c; color:#c5c1b9; flex:1; min-width:200px; outline:none; }}
+.filter-bar input:focus {{ border-color:var(--sparkry-accent); }}
+.btn {{ padding:0.45rem 1rem; border:none; border-radius:6px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem; }}
 .btn svg {{ width:16px; height:16px; }}
 .btn-export {{ background:var(--sparkry-accent); color:white; }}
 .btn-export:hover {{ background:#F08A3A; }}
-.btn-reset {{ background:rgba(255,255,255,0.08); color:#c5c1b9; border:1px solid rgba(255,255,255,0.1); }}
-.btn-reset:hover {{ background:rgba(255,255,255,0.14); }}
-.btn:focus-visible {{ outline:2px solid var(--sparkry-accent); outline-offset:2px; }}
-.filter-count {{ font-size:0.85rem; color:#7a7670; font-weight:500; }}
-
-.finding {{ background:#242424; border-radius:10px; padding:1rem 1.25rem; margin:0.6rem 0; box-shadow:0 1px 2px rgba(0,0,0,0.3); transition:all 0.15s; border-left:4px solid transparent; border:1px solid rgba(255,255,255,0.06); border-left-width:4px; }}
-.finding:hover {{ box-shadow:0 4px 12px rgba(0,0,0,0.4); }}
-.finding.hidden {{ display:none; }}
-.finding.act_now {{ border-left-color:var(--act-now-color); }}
-.finding.review {{ border-left-color:var(--review-color); }}
-.finding.suppressed {{ border-left-color:var(--suppressed-border); opacity:0.7; }}
-.finding.suppressed:hover {{ opacity:1; }}
-
-.finding-header {{ display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem; flex-wrap:wrap; }}
-.triage-badge {{ padding:0.2rem 0.5rem; border-radius:4px; font-size:0.72rem; font-weight:700; text-transform:uppercase; white-space:nowrap; display:inline-flex; align-items:center; gap:0.25rem; cursor:help; }}
-.triage-badge svg {{ width:12px; height:12px; }}
-.triage-act {{ background:var(--act-now-bg); color:var(--act-now-color); border:1px solid var(--act-now-border); }}
-.triage-review {{ background:var(--review-bg); color:var(--review-color); border:1px solid var(--review-border); }}
-.triage-suppressed {{ background:var(--suppressed-bg); color:var(--suppressed-color); border:1px solid var(--suppressed-border); }}
-
-.confidence-badge {{ padding:0.15rem 0.4rem; border-radius:3px; font-size:0.72rem; font-weight:600; background:rgba(255,255,255,0.08); color:#7a7670; cursor:help; display:inline-flex; align-items:center; gap:0.2rem; }}
-.confidence-badge svg {{ width:11px; height:11px; }}
-.confidence-high {{ background:rgba(232,117,26,0.2); color:#E8751A; }}
-.confidence-med {{ background:rgba(207,179,87,0.2); color:#cfb357; }}
-.confidence-low {{ background:rgba(255,255,255,0.06); color:#7a7670; }}
-
-.auto-fix-badge {{ padding:0.15rem 0.4rem; border-radius:3px; font-size:0.68rem; font-weight:700; background:var(--autofix-bg); color:var(--autofix-color); border:1px solid var(--autofix-border); display:inline-flex; align-items:center; gap:0.2rem; cursor:help; }}
-.auto-fix-badge svg {{ width:11px; height:11px; }}
-
-.context-badge {{ padding:0.15rem 0.4rem; border-radius:3px; font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.03em; cursor:help; display:inline-flex; align-items:center; gap:0.2rem; }}
-.context-badge svg {{ width:11px; height:11px; }}
-.ctx-ai {{ background:rgba(87,207,122,0.12); color:#57cf7a; border:1px solid rgba(87,207,122,0.3); }}
-.ctx-user {{ background:rgba(207,179,87,0.12); color:#cfb357; border:1px solid rgba(207,179,87,0.3); }}
-.ctx-test {{ background:rgba(232,117,26,0.12); color:#E8751A; border:1px solid rgba(232,117,26,0.3); }}
-
-.pattern-name {{ font-weight:600; font-size:0.9rem; }}
-
-.finding-details {{ font-size:0.88rem; }}
-.finding-details p {{ margin:0.35rem 0; display:flex; align-items:center; gap:0.35rem; }}
-.finding-details code {{ background:rgba(255,255,255,0.06); color:#c5c1b9; padding:0.15rem 0.4rem; border-radius:3px; font-size:0.82rem; word-break:break-all; }}
-.file-path {{ color:#E8751A; font-family:'SF Mono','Fira Code',monospace; font-size:0.82rem; word-break:break-all; }}
-.finding-action {{ margin-top:0.75rem; padding-top:0.75rem; border-top:1px solid rgba(255,255,255,0.06); }}
-.finding-action p {{ font-size:0.85rem; color:#7a7670; display:flex; align-items:flex-start; gap:0.4rem; margin:0.25rem 0; }}
-.finding-action p svg {{ width:16px; height:16px; flex-shrink:0; margin-top:2px; }}
-.finding-action .action-fix {{ color:var(--act-now-color); }}
-.finding-action .action-review {{ color:var(--review-color); }}
-.finding-action .action-info {{ color:#7a7670; }}
-
-.no-results {{ text-align:center; padding:3rem; color:#7a7670; display:none; }}
-.no-results svg {{ width:48px; height:48px; margin-bottom:0.5rem; }}
-
-.posture-card {{ background:#242424; border-radius:10px; padding:1rem 1.25rem; margin:0.6rem 0; box-shadow:0 1px 2px rgba(0,0,0,0.3); border-left:4px solid transparent; display:flex; gap:1rem; align-items:flex-start; border:1px solid rgba(255,255,255,0.06); border-left-width:4px; }}
+.copy-btn {{ background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#7a7670; padding:0.3rem 0.6rem; border-radius:4px; cursor:pointer; font-size:0.75rem; display:flex; align-items:center; gap:0.3rem; }}
+.copy-btn:hover {{ background:rgba(255,255,255,0.2); color:white; }}
+.copy-btn svg {{ width:14px; height:14px; }}
+.expand-row {{ display:none; }}
+.expand-row.visible {{ display:table-row; }}
+.expand-row td {{ padding:1rem; background:#242424; }}
+.expand-detail {{ font-size:0.85rem; color:#7a7670; }}
+.expand-detail code {{ background:rgba(255,255,255,0.06); padding:0.15rem 0.4rem; border-radius:3px; font-size:0.82rem; color:#c5c1b9; }}
+.expand-detail p {{ margin:0.3rem 0; }}
+.posture-section {{ margin-top:2rem; }}
+.posture-group {{ margin-bottom:1.5rem; }}
+.posture-group h3 {{ font-size:1rem; margin-bottom:0.5rem; color:#c5c1b9; }}
+.posture-card {{ background:#242424; border-radius:10px; padding:1rem 1.25rem; margin:0.6rem 0; border-left:4px solid transparent; display:flex; gap:1rem; align-items:flex-start; border:1px solid rgba(255,255,255,0.06); border-left-width:4px; }}
 .posture-card.secure {{ border-left-color:var(--secure-color); }}
 .posture-card.warning {{ border-left-color:var(--warning-color); }}
 .posture-card.insecure {{ border-left-color:var(--insecure-color); }}
@@ -967,55 +980,25 @@ svg {{ flex-shrink:0; }}
 .posture-icon {{ width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }}
 .posture-icon svg {{ width:20px; height:20px; }}
 .posture-icon.secure {{ background:rgba(87,207,122,0.12); color:var(--secure-color); }}
-.posture-icon.warning {{ background:var(--review-bg); color:var(--warning-color); }}
-.posture-icon.insecure {{ background:var(--act-now-bg); color:var(--insecure-color); }}
 .posture-icon.not_found {{ background:rgba(255,255,255,0.06); color:#7a7670; }}
 .posture-content strong {{ font-size:0.95rem; color:#c5c1b9; }}
 .posture-content p {{ font-size:0.85rem; color:#7a7670; margin-top:0.25rem; }}
-.posture-rec {{ font-size:0.82rem; color:#7a7670; font-style:italic; margin-top:0.35rem; display:flex; align-items:flex-start; gap:0.35rem; }}
-.posture-rec svg {{ width:14px; height:14px; flex-shrink:0; margin-top:2px; color:var(--sparkry-accent); }}
-.posture-summary {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-bottom:1.5rem; }}
-.posture-stat {{ background:#242424; border-radius:10px; padding:1rem; box-shadow:0 1px 3px rgba(0,0,0,0.3); text-align:center; border:1px solid rgba(255,255,255,0.06); }}
-.posture-stat .p-num {{ font-size:1.8rem; font-weight:700; font-family:inherit; color:#ffffff; }}
-.posture-stat .p-label {{ font-size:0.8rem; color:#7a7670; }}
-
 .footer {{ text-align:center; padding:2rem; color:#7a7670; font-size:0.82rem; border-top:1px solid rgba(255,255,255,0.06); margin-top:2rem; }}
 .footer a {{ color:var(--sparkry-accent); text-decoration:none; }}
-.footer a:hover {{ text-decoration:underline; }}
 .footer-links {{ display:flex; justify-content:center; gap:1.5rem; margin:0.5rem 0; flex-wrap:wrap; }}
 .footer-links a {{ display:inline-flex; align-items:center; gap:0.3rem; }}
 .footer-links a svg {{ width:14px; height:14px; }}
-.license {{ margin-top:0.75rem; padding-top:0.75rem; border-top:1px solid rgba(255,255,255,0.06); font-size:0.78rem; }}
-
+.skip-link {{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; z-index:1000; }}
+.skip-link:focus {{ position:fixed; top:0; left:0; width:auto; height:auto; padding:0.75rem 1.5rem; background:#2c2c2c; color:white; }}
 @media (max-width:640px) {{
     .header {{ padding:1rem; }}
-    .header h1 {{ font-size:1.3rem; }}
-    .tab-bar {{ padding:0 0.5rem; overflow-x:auto; }}
-    .tab-btn {{ padding:0.75rem 1rem; font-size:0.85rem; white-space:nowrap; }}
-    .stats-grid {{ grid-template-columns:repeat(2,1fr); }}
-    .verdict-card {{ flex-direction:column; text-align:center; }}
-    .verdict-card svg {{ margin:0 auto; }}
-    .finding-header {{ flex-direction:column; align-items:flex-start; }}
-    .toolbar {{ flex-direction:column; align-items:stretch; }}
-    .code-block {{ flex-direction:column; align-items:stretch; }}
+    .findings-table {{ font-size:0.78rem; }}
+    .findings-table th, .findings-table td {{ padding:0.4rem; }}
 }}
-@media (prefers-reduced-motion: reduce) {{
-    *, *::before, *::after {{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; scroll-behavior:auto !important; }}
-}}
-.skip-link {{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; z-index:1000; }}
-.skip-link:focus {{ position:fixed; top:0; left:0; width:auto; height:auto; padding:0.75rem 1.5rem; background:#2c2c2c; color:white; font-size:1rem; font-weight:600; z-index:1000; outline:2px solid var(--sparkry-accent); }}
-
-.what-to-do {{ margin-top:12px; }}
-.wtd-toggle {{ background:none; border:none; color:#E8751A; cursor:pointer; font-size:14px; font-weight:600; padding:4px 0; font-family:inherit; }}
-.wtd-toggle:hover {{ text-decoration:underline; }}
-.wtd-content {{ display:none; padding:8px 0 0 16px; }}
-.what-to-do.open .wtd-content {{ display:block; }}
-.wtd-content p {{ color:#7a7670; line-height:1.6; font-size:0.85rem; }}
 </style>
 </head>
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
-
 <div class="header">
     <div class="header-left">
         <div class="header-logo">
@@ -1031,22 +1014,8 @@ svg {{ flex-shrink:0; }}
     </div>
 </div>
 
-<div class="tab-bar" role="tablist" aria-label="Report sections">
-    <button class="tab-btn active" onclick="switchTab('dashboard')" id="tab-dashboard" role="tab" aria-selected="true" aria-controls="panel-dashboard">
-        {_icon("layout-dashboard", 18, 18)} Dashboard
-    </button>
-    <button class="tab-btn" onclick="switchTab('findings')" id="tab-findings" role="tab" aria-selected="false" aria-controls="panel-findings">
-        {_icon("file-search", 18, 18)} Findings
-        <span class="tab-count">{total_findings}</span>
-    </button>
-    {posture_tab_btn}
-</div>
-
 <main id="main-content">
-<!-- DASHBOARD -->
-<div class="tab-panel active" id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
 <div class="container">
-
     <div class="verdict-card {verdict_class}">
         {_icon(verdict_icon_name, 32, 32)}
         <div>
@@ -1055,108 +1024,43 @@ svg {{ flex-shrink:0; }}
         </div>
     </div>
 
-    <div class="stats-grid">
-        <div class="stat-card clickable tooltip" tabindex="0" role="button" aria-label="Filter findings to Act Now priority" onclick="filterByTriage('act_now')" onkeydown="if(event.key==='Enter'||event.key===' '){{event.preventDefault();filterByTriage('act_now');}}">
-            <div class="stat-icon act">{_icon("shield-alert", 24, 24)}</div>
-            <div>
-                <div class="stat-number act">{act_now_count}</div>
-                <div class="stat-label">Act Now</div>
-            </div>
-            <span class="tip-text">Real threats we're highly confident about &mdash; like exposed API keys. Fix these first.</span>
-        </div>
-        <div class="stat-card clickable tooltip" tabindex="0" role="button" aria-label="Filter findings to Review priority" onclick="filterByTriage('review')" onkeydown="if(event.key==='Enter'||event.key===' '){{event.preventDefault();filterByTriage('review');}}">
-            <div class="stat-icon rev">{_icon("eye", 24, 24)}</div>
-            <div>
-                <div class="stat-number rev">{review_count}</div>
-                <div class="stat-label">Review</div>
-            </div>
-            <span class="tip-text">Patterns that look suspicious but may be intentional. Review when you have time.</span>
-        </div>
-        <div class="stat-card tooltip" tabindex="0">
-            <div class="stat-icon files">{_icon("folder-search", 24, 24)}</div>
-            <div>
-                <div class="stat-number files">{s.total_files_scanned:,}</div>
-                <div class="stat-label">Files Scanned</div>
-            </div>
-            <span class="tip-text">Total files analyzed. {s.total_files_skipped:,} files were skipped (binary, images, etc.).</span>
-        </div>
-        <div class="stat-card clickable tooltip" tabindex="0" role="button" aria-label="Filter findings to auto-fixable only" onclick="filterByAutofix()" onkeydown="if(event.key==='Enter'||event.key===' '){{event.preventDefault();filterByAutofix();}}">
-            <div class="stat-icon fix">{_icon("zap", 24, 24)}</div>
-            <div>
-                <div class="stat-number fix">{auto_fix_count}</div>
-                <div class="stat-label">Auto-Fixable</div>
-            </div>
-            <span class="tip-text">SecureClaw can fix these automatically &mdash; like redacting exposed credentials. See "How to Fix" below.</span>
-        </div>
+    <div class="stats-bar">
+        <span>{_icon("folder-search", 16, 16)} {s.total_files_scanned:,} files scanned</span>
+        <span>{_icon("search", 16, 16)} {s.patterns_checked} patterns checked</span>
+        <span>{_icon("shield-alert", 16, 16)} {act_now_count} critical findings</span>
+        <span>{_icon("eye", 16, 16)} {review_count} to review</span>
+        <span>{_icon("clock", 16, 16)} {s.scan_duration_seconds:.1f}s</span>
     </div>
 
-    <div class="scan-meta">
-        <div class="scan-meta-item">{_icon("clock", 16, 16)} Scan took {s.scan_duration_seconds:.1f}s</div>
-        <div class="scan-meta-item">{_icon("search", 16, 16)} {s.patterns_checked} patterns checked</div>
-        <div class="scan-meta-item">{_icon("eye-off", 16, 16)}
-            <span class="tooltip" tabindex="0">{suppressed_count} suppressed
-                <span class="tip-text">Matched a pattern but automatically downgraded &mdash; test files, archives, or placeholder values. Very unlikely to be real threats.</span>
-            </span>
-        </div>
-    </div>
-
-    {fix_section_html}
-
-</div>
-</div>
-
-<!-- FINDINGS -->
-<div class="tab-panel" id="panel-findings" role="tabpanel" aria-labelledby="tab-findings">
-<div class="container">
-    <div class="toolbar" id="toolbar">
-        <div class="filter-group" style="flex:1;min-width:200px;">
-            {_icon("search", 16, 16, "color:#7a7670")}
-            <input type="text" id="filter-search" placeholder="Search files, patterns, matches..." oninput="debouncedFilter()" style="flex:1;padding:0.4rem 0.6rem;border:1px solid rgba(255,255,255,0.1);border-radius:6px;font-size:0.85rem;font-family:inherit;outline:none;background:#2c2c2c;color:#c5c1b9;" onfocus="this.style.borderColor='var(--sparkry-accent)';this.style.boxShadow='0 0 0 2px rgba(232,117,26,0.2)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.boxShadow='none';" aria-label="Search findings">
-        </div>
-        <div class="filter-group">
-            <select id="filter-triage" onchange="applyFilters()" aria-label="Filter by priority">
-                <option value="all">All Priority</option>
-                <option value="act_now">Act Now</option>
-                <option value="review">Review</option>
-                <option value="suppressed">Suppressed</option>
-            </select>
-        </div>
-        <div class="filter-group">
-            <select id="filter-category" onchange="applyFilters()" aria-label="Filter by type">
-                <option value="all">All Types</option>
-                {category_options}
-            </select>
-        </div>
-        <div class="filter-group">
-            <select id="filter-context" onchange="applyFilters()" aria-label="Filter by file type">
-                <option value="all">All Files</option>
-                {context_options}
-            </select>
-        </div>
-        <div class="filter-group">
-            <select id="filter-autofix" onchange="applyFilters()" aria-label="Filter by auto-fix">
-                <option value="all">All</option>
-                <option value="yes">Auto-Fixable Only</option>
-            </select>
-        </div>
-        <span class="filter-count" id="filter-count" aria-live="polite"></span>
-        <button class="btn btn-reset" onclick="resetFilters()">{_icon("rotate-ccw", 16, 16)} Reset</button>
+    <div class="filter-bar">
+        <input type="text" id="filter-search" placeholder="Filter by file, pattern..." oninput="filterTable()" aria-label="Search findings">
+        <select id="filter-category" onchange="filterTable()" aria-label="Filter by type">
+            <option value="all">All Types</option>
+            {category_options}
+        </select>
         <button class="btn btn-export" onclick="exportCSV()">{_icon("download", 16, 16)} Export CSV</button>
     </div>
 
-    <div id="findings-list">
-    {findings_html}
-    </div>
     {empty_state_html}
-    <div class="no-results" id="no-results">
-        {_icon("search-x", 48, 48)}
-        <p>No findings match the current filters.</p>
-        <p style="font-size:0.85rem;margin-top:0.5rem;"><a href="#" onclick="resetFilters();return false;">Reset all filters</a></p>
-    </div>
-</div>
-</div>
 
-{posture_section_html}
+    <table class="findings-table" id="findingsTable">
+    <thead>
+        <tr>
+            <th onclick="sortTable(0)">Sev</th>
+            <th onclick="sortTable(1)">File</th>
+            <th onclick="sortTable(2)">Line</th>
+            <th onclick="sortTable(3)">Pattern</th>
+            <th onclick="sortTable(4)">Confidence</th>
+            <th onclick="sortTable(5)">Triage</th>
+        </tr>
+    </thead>
+    <tbody>
+    {table_rows}
+    </tbody>
+    </table>
+
+    {posture_html}
+</div>
 </main>
 
 <div class="footer">
@@ -1166,197 +1070,81 @@ svg {{ flex-shrink:0; }}
         <a href="https://github.com/sparkryai/secureclaw">{_icon("github", 14, 14)} GitHub</a>
     </div>
     <p style="margin-top:0.5rem;">SecureClaw v{_e(result.tool_version)} &mdash; Generated {now}</p>
-    <p style="margin-top:0.25rem;">Run periodically to stay safe. Get the latest version at <a href="https://secureclaw.sparkry.ai" style="color:var(--sparkry-accent);">secureclaw.sparkry.ai</a></p>
-    <div class="license">
-        <p>MIT License &copy; 2026 Sparkry AI LLC. Free to use, modify, and distribute.</p>
-        <p>Your AI reads your files. Make sure those files aren't trying to hijack it.</p>
-    </div>
 </div>
 
 <script>
-/* Tab switching with ARIA */
-function switchTab(name) {{
-    document.querySelectorAll('.tab-btn').forEach(function(b) {{
-        b.classList.remove('active');
-        b.setAttribute('aria-selected', 'false');
+/* Sort table by column */
+var sortDir = [1,1,1,1,1,1];
+function sortTable(col) {{
+    var table = document.getElementById('findingsTable');
+    if (!table) return;
+    var tbody = table.querySelector('tbody');
+    var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr.data-row'));
+    sortDir[col] = -sortDir[col];
+    rows.sort(function(a, b) {{
+        var aVal = a.children[col] ? a.children[col].textContent.trim() : '';
+        var bVal = b.children[col] ? b.children[col].textContent.trim() : '';
+        var aNum = parseFloat(aVal);
+        var bNum = parseFloat(bVal);
+        if (!isNaN(aNum) && !isNaN(bNum)) return (aNum - bNum) * sortDir[col];
+        return aVal.localeCompare(bVal) * sortDir[col];
     }});
-    document.querySelectorAll('.tab-panel').forEach(function(p) {{ p.classList.remove('active'); }});
-    var tabBtn = document.getElementById('tab-' + name);
-    var tabPanel = document.getElementById('panel-' + name);
-    if (tabBtn) {{ tabBtn.classList.add('active'); tabBtn.setAttribute('aria-selected', 'true'); tabBtn.focus(); }}
-    if (tabPanel) {{ tabPanel.classList.add('active'); }}
-}}
-
-/* Keyboard navigation for tab bar */
-document.querySelector('.tab-bar').addEventListener('keydown', function(e) {{
-    var tabs = Array.prototype.slice.call(this.querySelectorAll('.tab-btn'));
-    var current = tabs.indexOf(document.activeElement);
-    if (current === -1) return;
-    var next = -1;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {{
-        next = (current + 1) % tabs.length;
-    }} else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {{
-        next = (current - 1 + tabs.length) % tabs.length;
-    }} else if (e.key === 'Home') {{
-        next = 0;
-    }} else if (e.key === 'End') {{
-        next = tabs.length - 1;
-    }} else if (e.key === 'Enter' || e.key === ' ') {{
-        e.preventDefault();
-        tabs[current].click();
-        return;
-    }}
-    if (next !== -1) {{
-        e.preventDefault();
-        tabs[next].focus();
-        tabs[next].click();
-    }}
-}});
-
-/* Debounced search (200ms) */
-var _filterTimer = null;
-function debouncedFilter() {{
-    if (_filterTimer) clearTimeout(_filterTimer);
-    _filterTimer = setTimeout(applyFilters, 200);
-}}
-
-/* Filter findings with null guards for clean scans */
-function applyFilters() {{
-    var triEl = document.getElementById('filter-triage');
-    var catEl = document.getElementById('filter-category');
-    var ctxEl = document.getElementById('filter-context');
-    var fixEl = document.getElementById('filter-autofix');
-    var searchEl = document.getElementById('filter-search');
-    if (!triEl || !catEl || !ctxEl || !fixEl) return;
-    var tri = triEl.value;
-    var cat = catEl.value;
-    var ctx = ctxEl.value;
-    var fix = fixEl.value;
-    var query = (searchEl ? searchEl.value : '').toLowerCase().trim();
-    var findings = document.querySelectorAll('.finding');
-    var shown = 0;
-    var total = findings.length;
-    findings.forEach(function(el) {{
-        var matchTri = (tri === 'all' || el.getAttribute('data-triage') === tri);
-        var matchCat = (cat === 'all' || el.getAttribute('data-category') === cat);
-        var matchCtx = (ctx === 'all' || el.getAttribute('data-context') === ctx);
-        var matchFix = (fix === 'all' || el.getAttribute('data-autofix') === fix);
-        var matchSearch = true;
-        if (query) {{
-            /* Search visible text only, excluding tooltip text */
-            var searchText = '';
-            el.querySelectorAll('.pattern-name, .file-path, .finding-details code, .finding-action strong').forEach(function(s) {{
-                searchText += ' ' + s.textContent;
-            }});
-            searchText += ' ' + (el.getAttribute('data-category') || '') + ' ' + (el.getAttribute('data-triage') || '');
-            matchSearch = searchText.toLowerCase().indexOf(query) !== -1;
-        }}
-        if (matchTri && matchCat && matchCtx && matchFix && matchSearch) {{
-            el.classList.remove('hidden');
-            shown++;
-        }} else {{
-            el.classList.add('hidden');
-        }}
+    rows.forEach(function(row) {{
+        var expandRow = row.nextElementSibling;
+        tbody.appendChild(row);
+        if (expandRow && expandRow.classList.contains('expand-row')) tbody.appendChild(expandRow);
     }});
-    var countEl = document.getElementById('filter-count');
-    if (countEl) countEl.textContent = shown + ' of ' + total + ' findings';
-    var noResults = document.getElementById('no-results');
-    if (noResults) noResults.style.display = (shown === 0 && total > 0) ? 'block' : 'none';
 }}
 
-function resetFilters() {{
-    var ids = ['filter-triage', 'filter-category', 'filter-context', 'filter-autofix'];
-    ids.forEach(function(id) {{
-        var el = document.getElementById(id);
-        if (el) el.value = 'all';
+/* Toggle expand row */
+function toggleRow(id) {{
+    var row = document.getElementById('expand-' + id);
+    if (row) row.classList.toggle('visible');
+}}
+
+/* Filter table */
+function filterTable() {{
+    var query = (document.getElementById('filter-search').value || '').toLowerCase().trim();
+    var cat = document.getElementById('filter-category').value;
+    var rows = document.querySelectorAll('#findingsTable tbody tr.data-row');
+    rows.forEach(function(row) {{
+        var text = row.textContent.toLowerCase();
+        var rowCat = row.getAttribute('data-category') || '';
+        var matchSearch = !query || text.indexOf(query) !== -1;
+        var matchCat = cat === 'all' || rowCat === cat;
+        var show = matchSearch && matchCat;
+        row.style.display = show ? '' : 'none';
+        var expandRow = document.getElementById('expand-' + row.getAttribute('data-idx'));
+        if (expandRow) expandRow.style.display = show ? '' : 'none';
     }});
-    var searchEl = document.getElementById('filter-search');
-    if (searchEl) searchEl.value = '';
-    applyFilters();
 }}
 
-/* Stat card filter helpers — reset all filters first, then apply specific one */
-function filterByTriage(value) {{
-    resetFilters();
-    var el = document.getElementById('filter-triage');
-    if (el) {{ el.value = value; applyFilters(); }}
-    switchTab('findings');
-}}
-function filterByAutofix() {{
-    resetFilters();
-    var el = document.getElementById('filter-autofix');
-    if (el) {{ el.value = 'yes'; applyFilters(); }}
-    switchTab('findings');
-}}
-
-/* Copy to clipboard with event parameter (Firefox-safe) + fallback */
+/* Copy to clipboard */
 function copyText(evt, text) {{
-    var btn = evt && evt.target ? evt.target.closest('.copy-btn') : null;
     if (navigator.clipboard && navigator.clipboard.writeText) {{
-        navigator.clipboard.writeText(text).then(function() {{
-            if (btn) showCopied(btn);
-        }}).catch(function() {{
-            fallbackCopy(text, btn);
-        }});
+        navigator.clipboard.writeText(text);
     }} else {{
-        fallbackCopy(text, btn);
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;left:-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try {{ document.execCommand('copy'); }} catch(e) {{}}
+        document.body.removeChild(ta);
     }}
 }}
-function fallbackCopy(text, btn) {{
-    var ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.cssText = 'position:fixed;left:-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    try {{ document.execCommand('copy'); if (btn) showCopied(btn); }} catch(e) {{}}
-    document.body.removeChild(ta);
-}}
-function showCopied(btn) {{
-    var orig = btn.innerHTML;
-    btn.innerHTML = '{check_icon_js} Copied!';
-    setTimeout(function() {{ btn.innerHTML = orig; }}, 2000);
-}}
 
-/* CSV export — extracts text without tooltip content */
+/* CSV export */
 function exportCSV() {{
-    var catNames = {{'exfiltration':'Exposed Credentials','instruction_override':'AI Instruction Tampering','role_confusion':'AI Role Manipulation','system_prompt_extraction':'System Prompt Leakage','tool_manipulation':'Tool Misuse','encoded_injection':'Hidden/Encoded Attacks','invisible_text':'Invisible Text','markdown_injection':'Markdown Injection','mcp_manipulation':'Plugin Manipulation'}};
-    var ctxNames = {{'ai_config':'AI Configuration','user_content':'Your Documents','test_fixture':'Test Files'}};
-    var triNames = {{'act_now':'Act Now','review':'Review','suppressed':'Suppressed'}};
-    var findings = document.querySelectorAll('.finding:not(.hidden)');
-    var rows = [['Priority','Confidence','Type','Where Found','File','Match','Why It Matters','How to Fix','Auto-Fixable']];
-    findings.forEach(function(el) {{
-        var tri = el.getAttribute('data-triage') || '';
-        var cat = el.getAttribute('data-category') || '';
-        var ctx = el.getAttribute('data-context') || '';
-        var autofix = el.getAttribute('data-autofix') || '';
-        /* Extract confidence number from badge text, excluding tooltip */
-        var confBadge = el.querySelector('.confidence-badge');
-        var conf = '';
-        if (confBadge) {{
-            confBadge.querySelectorAll('.tip-text').forEach(function(t) {{ t.style.display = 'none'; }});
-            conf = confBadge.textContent.trim();
-            confBadge.querySelectorAll('.tip-text').forEach(function(t) {{ t.style.display = ''; }});
-        }}
-        var filePath = el.querySelector('.file-path') ? el.querySelector('.file-path').textContent : '';
-        var match = '', desc = '', fix = '';
-        var codeEl = el.querySelector('.finding-details code');
-        if (codeEl) match = codeEl.textContent.trim();
-        var fixEl = el.querySelector('.action-fix');
-        if (fixEl) {{
-            fixEl.querySelectorAll('.tip-text').forEach(function(t) {{ t.style.display = 'none'; }});
-            desc = fixEl.textContent.replace(/Why it matters:\\s*/, '').trim();
-            fixEl.querySelectorAll('.tip-text').forEach(function(t) {{ t.style.display = ''; }});
-        }}
-        var revEl = el.querySelector('.action-review');
-        if (revEl) {{
-            revEl.querySelectorAll('.tip-text').forEach(function(t) {{ t.style.display = 'none'; }});
-            fix = revEl.textContent.replace(/How to fix:\\s*/, '').trim();
-            revEl.querySelectorAll('.tip-text').forEach(function(t) {{ t.style.display = ''; }});
-        }}
-        rows.push([triNames[tri]||tri, conf, catNames[cat]||cat, ctxNames[ctx]||ctx, filePath, match, desc, fix, autofix==='yes'?'Yes':'No']);
+    var rows = [['Severity','File','Line','Pattern','Confidence','Triage']];
+    document.querySelectorAll('#findingsTable tbody tr.data-row').forEach(function(row) {{
+        if (row.style.display === 'none') return;
+        var cells = [];
+        for (var i = 0; i < row.children.length; i++) cells.push(row.children[i].textContent.trim());
+        rows.push(cells);
     }});
     var csv = rows.map(function(r) {{
-        return r.map(function(c) {{ return '"' + String(c).replace(/"/g, '""') + '"'; }}).join(',');
+        return r.map(function(c) {{ return '"' + String(c).replace(/"/g,'""') + '"'; }}).join(',');
     }}).join('\\n');
     var blob = new Blob([csv], {{ type:'text/csv;charset=utf-8;' }});
     var a = document.createElement('a');
@@ -1365,15 +1153,124 @@ function exportCSV() {{
     a.click();
     URL.revokeObjectURL(a.href);
 }}
-
-/* Initialize filter count */
-(function() {{
-    var el = document.getElementById('filter-count');
-    if (el) {{
-        var total = document.querySelectorAll('.finding').length;
-        el.textContent = total + ' of ' + total + ' findings';
-    }}
-}})();
 </script>
 </body>
 </html>"""
+
+
+def _render_detailed_table_rows(findings: List[Finding]) -> str:
+    """Render findings as table rows for the detailed v2 view."""
+    if not findings:
+        return ""
+    rows = []
+    for idx, f in enumerate(findings):
+        sev = f.severity.value.upper()
+        sev_css = "sev-" + f.severity.value
+        tri_val = f.triage.value
+        tri_css = "triage-" + {
+            "act_now": "act",
+            "review": "review",
+            "suppressed": "suppressed",
+        }.get(tri_val, "review")
+        tri_label = {"act_now": "Act Now", "review": "Review", "suppressed": "Suppressed"}.get(
+            tri_val, tri_val
+        )
+        filename = Path(f.file_path).name
+        full_path = str(f.file_path)
+        line = str(f.line_number) if f.line_number is not None else ""
+        conf = str(f.confidence)
+
+        # Data row
+        rows.append(
+            f'<tr class="data-row" data-idx="{idx}" data-category="{_e(f.category.value)}" '
+            f'style="cursor:pointer" onclick="toggleRow({idx})">'
+            f'<td class="{_e(sev_css)}">{_e(sev)}</td>'
+            f'<td><span class="file-path" title="{_e(full_path)}">{_e(filename)}</span></td>'
+            f"<td>{_e(line)}</td>"
+            f"<td>{_e(f.pattern_name)}</td>"
+            f"<td>{_e(conf)}</td>"
+            f'<td class="{_e(tri_css)}">{_e(tri_label)}</td>'
+            f"</tr>"
+        )
+
+        # Expandable detail row
+        copy_cmd = f"secureclaw allowlist add {f.pattern_id}"
+        rows.append(
+            f'<tr class="expand-row" id="expand-{idx}">'
+            f'<td colspan="6"><div class="expand-detail">'
+            f'<p><strong>File:</strong> <span class="file-path">{_e(full_path)}:{_e(line)}</span></p>'
+            f"<p><strong>Matched:</strong> <code>{_e((f.matched_text or '')[:150])}</code></p>"
+            f"<p><strong>Description:</strong> {_e(f.description)}</p>"
+            f"<p><strong>Remediation:</strong> {_e(f.remediation)}</p>"
+            f"<p><strong>Suppress:</strong> <code>{_e(copy_cmd)}</code> "
+            f'<button class="copy-btn" onclick="event.stopPropagation();copyText(event,\'{_js_str(copy_cmd)}\')">'
+            f"Copy</button></p>"
+            f"</div></td></tr>"
+        )
+    return "\n    ".join(rows)
+
+
+def _render_detailed_posture_grouped(checks: List[PostureCheck]) -> str:
+    """Render posture checks grouped by status for detailed v2 view."""
+    if not checks:
+        return ""
+    icon_map = {
+        "secure": "check-circle",
+        "warning": "alert-triangle",
+        "insecure": "x-circle",
+        "not_found": "info",
+        "advisory": "info",
+    }
+
+    protected = []
+    needs_attention = []
+    not_installed = []
+    for c in checks:
+        status = (
+            c.status if c.status in ("secure", "warning", "insecure", "not_found") else "not_found"
+        )
+        icon_name = icon_map.get(status, "info")
+        rec_html = ""
+        if c.recommendation:
+            rec_html = f'<div class="posture-rec">{_icon("lightbulb", 14, 14, "color:var(--sparkry-accent)")} {_e(c.recommendation)}</div>'
+        card = (
+            f'<div class="posture-card {_e(status)}">'
+            f'<div class="posture-icon {_e(status)}">{_icon(icon_name, 20, 20)}</div>'
+            f'<div class="posture-content">'
+            f"<strong>{_e(c.tool_name)}</strong> &mdash; {_e(c.check_name)}"
+            f"<p>{_e(c.description)}</p>"
+            f"{rec_html}"
+            f"</div></div>"
+        )
+        if status == "secure":
+            protected.append(card)
+        elif status in ("warning", "insecure"):
+            needs_attention.append(card)
+        else:
+            not_installed.append(card)
+
+    sections = []
+    if protected:
+        sections.append(
+            '<div class="posture-group"><h3>Protected</h3>' + "".join(protected) + "</div>"
+        )
+    if needs_attention:
+        sections.append(
+            '<div class="posture-group"><h3>Needs Attention</h3>'
+            + "".join(needs_attention)
+            + "</div>"
+        )
+    if not_installed:
+        sections.append(
+            '<div class="posture-group not-installed"><h3>Not Installed</h3>'
+            + "".join(not_installed)
+            + "</div>"
+        )
+
+    # Always show Not Installed group
+    if not any("not-installed" in s or "Not Installed" in s for s in sections):
+        sections.append(
+            '<div class="posture-group not-installed"><h3>Not Installed</h3><p style="color:#7a7670;font-size:0.85rem;">Nothing to worry about here.</p></div>'
+        )
+
+    return '<div class="posture-section"><h2>Security Posture</h2>' + "".join(sections) + "</div>"
