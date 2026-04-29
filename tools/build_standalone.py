@@ -31,7 +31,6 @@ SECTIONS = [
     ("Terminal Reporter", SRC / "reporters" / "terminal.py"),
     ("HTML Reporter", SRC / "reporters" / "html_report.py"),
     ("JSON Reporter", SRC / "reporters" / "json_report.py"),
-    ("Text Reporter", SRC / "reporters" / "text_report.py"),
     ("GUI Server", SRC / "gui.py"),
     ("CLI", SRC / "cli.py"),
 ]

@@ -769,8 +769,11 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     if not args.command:
         try:
-            from secureclaw.gui import start_gui_server
+            from secureclaw.gui import start_gui_server  # noqa: F811
+            _gui_available = True
         except ImportError:
+            _gui_available = False
+        if not _gui_available:
             parser.print_help()
             sys.exit(EXIT_CLEAN)
         start_gui_server(port=0)
@@ -784,8 +787,11 @@ def main(argv: Optional[List[str]] = None) -> None:
     try:
         if args.command == "gui":
             try:
-                from secureclaw.gui import start_gui_server
+                from secureclaw.gui import start_gui_server  # noqa: F811
+                _gui_ok = True
             except ImportError:
+                _gui_ok = False
+            if not _gui_ok:
                 print("GUI is not yet available. Use 'secureclaw scan' instead.", file=sys.stderr)
                 sys.exit(1)
             start_gui_server(port=getattr(args, "port", 0))
