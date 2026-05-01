@@ -1,0 +1,51 @@
+# SecureClaw CODEOWNERS
+#
+# Per v1.3-plan-v10 K.3: critical paths require explicit user review before
+# merge. Pattern PRs (anything that modifies detection logic, scoring, or
+# rule data) are NEVER eligible for the `auto-merge-on-green` label and
+# always require @sparkst review.
+#
+# CODEOWNERS is the keystone of the merge gate: branch protection rules
+# require approving review from a CODEOWNERS owner.
+
+# Detection rules and pattern data — pattern PR review required
+secureclaw/rules/                              @sparkst
+
+# Engine code — pattern PR review required
+secureclaw/core/match_quality.py               @sparkst
+secureclaw/core/path_heuristics.py             @sparkst
+secureclaw/core/normalize.py                   @sparkst
+secureclaw/core/credentials.py                 @sparkst
+secureclaw/core/confidence.py                  @sparkst
+secureclaw/core/patterns.py                    @sparkst
+
+# Legacy snapshot — frozen, no changes outside CVE patches per K.5
+secureclaw/legacy/                             @sparkst
+
+# Quality gates — loosening requires dedicated PR per REQ-14
+tests/quality_gates.json                       @sparkst
+tests/quality_gates_schema.json                @sparkst
+
+# Calibration baselines — affect every benchmark gate
+tests/benchmarks/                              @sparkst
+tests/legacy_baseline.json                     @sparkst
+
+# Third-party attribution — license-compatibility audit point
+THIRD_PARTY_NOTICES.md                         @sparkst
+secureclaw/rules/SOURCING.md                   @sparkst
+
+# CI workflows — runners + permissions blast radius
+.github/workflows/                             @sparkst
+.github/CODEOWNERS                             @sparkst
+
+# Calibration container (R7-SEC P1 fix) — bus-factor risk if not gated
+tools/calibration/                             @sparkst
+
+# Upstream lockfiles — supply-chain integrity
+tests/corpus/benchmarks/*/.upstream            @sparkst
+
+# Release-critical configuration
+pyproject.toml                                 @sparkst
+SecureClaw.spec                                @sparkst
+tools/build_standalone.py                      @sparkst
+tools/build_mac_app.sh                         @sparkst
