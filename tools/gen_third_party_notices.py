@@ -104,6 +104,7 @@ DEP_LICENSE_TABLE = {
     "pytest": ("MIT", "Test framework (dev only)"),
     "ruff": ("MIT", "Lint + format (dev only)"),
     "PyYAML": ("MIT", "YAML parsing (dev only — workflow tests)"),
+    "packaging": ("Apache-2.0 OR BSD-2-Clause", "Semver parsing for REQ-15 (dev only)"),
 }
 
 
