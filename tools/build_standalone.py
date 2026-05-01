@@ -25,6 +25,7 @@ SECTIONS = [
     ("Pattern Engine", SRC / "core" / "patterns.py"),
     ("File Scanner", SRC / "core" / "scanner.py"),
     ("Allowlist", SRC / "core" / "allowlist.py"),
+    ("Credentials Single Source of Truth", SRC / "core" / "credentials.py"),
     ("Confidence Scoring", SRC / "core" / "confidence.py"),
     ("Auto-Remediation", SRC / "core" / "remediate.py"),
     ("Posture Analyzer", SRC / "posture" / "analyzer.py"),

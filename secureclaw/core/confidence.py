@@ -7,38 +7,14 @@ match content, and context.
 
 from __future__ import annotations
 
-import re
 from typing import List
 
+from secureclaw.core.credentials import PLACEHOLDER_PATTERNS, REAL_TOKEN_PREFIXES
 from secureclaw.core.models import FileContext, Finding, Triage
 
-# Real credential prefixes — these are almost certainly live secrets
-REAL_TOKEN_PREFIXES = (
-    "sk-ant-",
-    "sk-proj-",
-    "sk-",
-    "ghp_",
-    "gho_",
-    "ghs_",
-    "github_pat_",
-    "glpat-",
-    "xoxb-",
-    "xoxp-",
-    "AKIA",
-    "eyJ",
-    "AIza",
-    "r8_",
-    "hf_",
-    "Bearer ",
-)
-
-# Placeholder values that are NOT real credentials
-PLACEHOLDER_PATTERNS = re.compile(
-    r"(not[_-]configured|your[_-]token|your[_-]key|xxx+|test[_-]secret|"
-    r"fake[_-]|example[_-]|placeholder|changeme|TODO|REPLACE_ME|"
-    r"insert[_-]|put[_-]your|sk-your|ghp_your|<your|dummy)",
-    re.IGNORECASE,
-)
+# Re-export for backward compatibility (some tests / callers may import these
+# from confidence directly). Single source of truth lives in credentials.py.
+__all__ = ["score_finding", "score_findings", "REAL_TOKEN_PREFIXES", "PLACEHOLDER_PATTERNS"]
 
 # Archive / backup / history paths that are stale
 ARCHIVE_INDICATORS = (
