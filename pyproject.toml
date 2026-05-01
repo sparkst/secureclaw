@@ -38,7 +38,7 @@ classifiers = [
 # (PR-J2) auto-merges patch/minor updates after CI green.
 dependencies = [
     "regex==2024.11.6",
-    "send2trash>=1.8,<2.0",
+    "send2trash>=1.8,<3.0",
 ]
 
 [project.optional-dependencies]
