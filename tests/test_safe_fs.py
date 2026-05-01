@@ -118,13 +118,13 @@ def test_atomic_write_no_partial_on_error(tmp_path: Path, monkeypatch: pytest.Mo
     target = tmp_path / "dest.txt"
     target.write_text("original")
 
-    # Force os.replace to fail; verify original survives + temp is cleaned.
-    real_replace = os.replace
-
-    def boom(*a: object, **kw: object) -> None:
+    # Force the rename step to fail; verify original survives + temp is cleaned.
+    # Python 3.9/3.10's Path.replace doesn't dispatch through os.replace at
+    # call time, so we patch the Path method itself for cross-version stability.
+    def boom(self: Path, *a: object, **kw: object) -> None:
         raise OSError("simulated disk full")
 
-    monkeypatch.setattr(os, "replace", boom)
+    monkeypatch.setattr(Path, "replace", boom)
 
     with pytest.raises(OSError, match="simulated disk full"):
         atomic_write_text(target, "new content")
@@ -134,9 +134,6 @@ def test_atomic_write_no_partial_on_error(tmp_path: Path, monkeypatch: pytest.Mo
     # No leftover .tmp file
     leftover = list(target.parent.glob(f".{target.name}.*.tmp"))
     assert leftover == [], f"leftover temp files: {leftover}"
-
-    # Restore so subsequent tests work
-    monkeypatch.setattr(os, "replace", real_replace)
 
 
 def test_chain_walk_does_not_resolve_symlinks(tmp_path: Path) -> None:
