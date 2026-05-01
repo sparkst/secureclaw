@@ -1,0 +1,84 @@
+# Dependabot configuration for SecureClaw runtime + dev dependencies.
+#
+# Per v1.3-plan-v10 §B.8 + PR-J2:
+#   - regex==2024.11.6 (exact pin) is the load-bearing runtime dep — Unicode
+#     property classes + per-match timeout. Dependabot proposes patch/minor
+#     bumps as PRs; CI green is the gate. Major bumps require explicit
+#     review (label `deps-major`).
+#   - send2trash range-pinned to 1.x; same treatment.
+#   - dev deps (pytest, ruff, PyYAML, packaging) updated weekly.
+#
+# Auto-merge of patch/minor updates after CI green is implemented in
+# .github/workflows/dependabot-auto-merge.yml.
+#
+# Security advisories (separate channel from Dependabot version bumps) get
+# their own elevated path: PR labeled `security-advisory`, no auto-merge,
+# user-reviewed regardless of severity.
+
+version: 2
+
+updates:
+  # Python runtime + dev dependencies (declared in pyproject.toml).
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 5
+    labels:
+      - "deps"
+      - "automated"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    # Group patch + minor updates together by ecosystem for less noise.
+    groups:
+      runtime-patches:
+        applies-to: version-updates
+        dependency-type: "production"
+        update-types:
+          - "patch"
+      runtime-minors:
+        applies-to: version-updates
+        dependency-type: "production"
+        update-types:
+          - "minor"
+      dev-patches:
+        applies-to: version-updates
+        dependency-type: "development"
+        update-types:
+          - "patch"
+          - "minor"
+    # Major version bumps are NOT auto-grouped; each becomes its own PR
+    # so the diff and CHANGELOG can be reviewed in isolation.
+    ignore:
+      # Don't allow Dependabot to relax the regex exact pin without a
+      # human-reviewed major-bump PR. The deps-major label workflow
+      # below handles the upgrade path.
+      - dependency-name: "regex"
+        update-types:
+          - "version-update:semver-major"
+
+  # GitHub Actions used in our workflows. Patch updates auto-mergeable;
+  # major (e.g., v4 → v5 of actions/checkout) reviewed.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 3
+    labels:
+      - "ci"
+      - "automated"
+    commit-message:
+      prefix: "ci(deps)"
+      include: "scope"
+    groups:
+      actions-patches:
+        update-types:
+          - "patch"
+          - "minor"

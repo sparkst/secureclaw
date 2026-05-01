@@ -1,0 +1,58 @@
+# Auto-merge Dependabot patch + minor updates after CI green.
+#
+# Per v1.3-plan-v10 §B.8 + PR-J2: regex/send2trash/dev deps get auto-merged
+# at patch + minor; major version bumps require manual review (label
+# `deps-major` on the PR triggers a separate notification path, no
+# auto-merge).
+#
+# The `dependabot/fetch-metadata` action returns the SemVer change kind;
+# we gate auto-merge on update-type = patch | minor.
+#
+# Security advisories are NOT auto-merged regardless of severity. They get
+# the `security-advisory` label and require explicit user approval.
+
+name: Dependabot Auto-Merge
+
+on:
+  pull_request_target:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  auto-merge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Refuse on security-advisory label
+        if: contains(steps.meta.outputs.alert-state, 'open') ||
+            contains(github.event.pull_request.labels.*.name, 'security-advisory')
+        run: |
+          echo "Security advisory PR — auto-merge disabled. Manual review required."
+          exit 0
+
+      - name: Refuse on major version bump
+        if: steps.meta.outputs.update-type == 'version-update:semver-major'
+        run: |
+          echo "Major version bump — auto-merge disabled. Add 'deps-major' label and review."
+          exit 0
+
+      - name: Enable auto-merge for patch/minor
+        if: steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+            steps.meta.outputs.update-type == 'version-update:semver-minor'
+        run: |
+          gh pr review --approve "$PR_URL"
+          gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
