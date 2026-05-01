@@ -1,8 +1,13 @@
-"""Confidence scoring and triage for findings.
+"""Confidence scoring composition + triage tier assignment.
 
-Assigns each finding a confidence score (0-100) and triage tier
-(ACT_NOW / REVIEW / SUPPRESSED) based on heuristics about the file path,
-match content, and context.
+Per v1.3-plan-v10 §B.5/B.6 (PR-A3 decomposition): the actual scoring
+logic lives in ``match_quality.py`` (content-only) and
+``path_heuristics.py`` (path-only). This module composes them, applies
+clamping, and assigns the triage tier.
+
+Backward compatibility: ``REAL_TOKEN_PREFIXES`` and
+``PLACEHOLDER_PATTERNS`` are re-exported from
+``secureclaw.core.credentials`` (single source of truth per PR-A2).
 """
 
 from __future__ import annotations
@@ -10,156 +15,58 @@ from __future__ import annotations
 from typing import List
 
 from secureclaw.core.credentials import PLACEHOLDER_PATTERNS, REAL_TOKEN_PREFIXES
-from secureclaw.core.models import FileContext, Finding, Triage
+from secureclaw.core.match_quality import ScoreAdjustment, score_match_content
+from secureclaw.core.models import Finding, Triage
+from secureclaw.core.path_heuristics import score_path_heuristics
 
-# Re-export for backward compatibility (some tests / callers may import these
-# from confidence directly). Single source of truth lives in credentials.py.
-__all__ = ["score_finding", "score_findings", "REAL_TOKEN_PREFIXES", "PLACEHOLDER_PATTERNS"]
+__all__ = [
+    "score_finding",
+    "score_findings",
+    "REAL_TOKEN_PREFIXES",
+    "PLACEHOLDER_PATTERNS",
+]
 
-# Archive / backup / history paths that are stale
-ARCHIVE_INDICATORS = (
-    "/archive/",
-    "/.specstory/",
-    "/backup",
-    "/history/",
-    "-backup-",
-    "/old/",
-    "/deprecated/",
-    "/legacy/",
-)
+# Triage thresholds (preserved from v1.2; v1.3-plan-v10 §B.6 will tune
+# these in a follow-up calibration PR with held-out test data).
+TIER_ACT_NOW_MIN = 60
+TIER_REVIEW_MIN = 30
+BASELINE_SCORE = 50
 
-# Security research content that discusses injections
-SECURITY_RESEARCH_INDICATORS = (
-    "security-scanner",
-    "email-security",
-    "prompt-injection",
-    "secureclaw",
-    "injection-test",
-    "attack-",
-    "pentest",
-    "vulnerability",
-    "exploit-",
-    "cve-",
-)
 
-# Coverage / generated report paths
-GENERATED_INDICATORS = (
-    "/coverage/",
-    "/lcov-report/",
-    "/__generated__/",
-    "/dist/",
-    "/build/",
-    ".min.js",
-    ".bundle.",
-)
+def _merge_fix_action(content_adj: ScoreAdjustment, path_adj: ScoreAdjustment) -> tuple[bool, str]:
+    """Combine fix-action signals from content + path layers.
+
+    Content-layer fix actions take precedence (placeholder-detection in the
+    content layer should override an archive demotion in the path layer
+    when both fire). Falls back to the path layer if content didn't set
+    one.
+    """
+    if content_adj.fix_action:
+        return content_adj.auto_fixable, content_adj.fix_action
+    if path_adj.fix_action:
+        return path_adj.auto_fixable, path_adj.fix_action
+    return False, ""
 
 
 def score_finding(finding: Finding) -> Finding:
-    """Score a single finding and assign triage tier."""
-    score = 50  # baseline
-    reasons: list[str] = []
-    auto_fixable = False
-    fix_action = ""
-    path_str = str(finding.file_path).replace("\\", "/").lower()
-    match_lower = finding.matched_text.lower()
+    """Score a single finding and assign triage tier.
 
-    # --- Boosters (increase confidence = more likely real) ---
+    Decomposed per §B.5: content-only (match_quality) + path-only
+    (path_heuristics) → composite. Mutates ``finding`` in place and
+    returns it (back-compat with the v1.2 signature).
+    """
+    content_adj = score_match_content(finding)
+    path_adj = score_path_heuristics(finding)
 
-    # Real credential with known prefix
-    if finding.pattern_id == "PI-022":
-        # Extract the value after the = or :
-        for prefix in REAL_TOKEN_PREFIXES:
-            if prefix.lower() in match_lower:
-                score += 40
-                reasons.append(f"Real token prefix ({prefix.rstrip()})")
-                auto_fixable = True
-                fix_action = "redact_credential"
-                break
-        # Placeholder check
-        if PLACEHOLDER_PATTERNS.search(finding.matched_text):
-            score -= 45
-            reasons.append("Placeholder/test value")
-            auto_fixable = True
-            fix_action = "allowlist"
-
-    # Active .env / .envrc files (not in archive)
-    if any(finding.file_path.name == n for n in (".env", ".envrc", ".env.local")):
-        if not any(ind in path_str for ind in ARCHIVE_INDICATORS):
-            score += 15
-            reasons.append("Active environment file")
-
-    # --- Reducers (decrease confidence = more likely noise) ---
-
-    # Test fixtures
-    if finding.file_context == FileContext.TEST_FIXTURE:
-        score -= 30
-        reasons.append("Test fixture")
-        auto_fixable = True
-        fix_action = "allowlist"
-
-    # AI config
-    if finding.file_context == FileContext.AI_CONFIG:
-        score -= 20
-        reasons.append("AI config file")
-
-    # Archive / stale file
-    if any(ind in path_str for ind in ARCHIVE_INDICATORS):
-        score -= 20
-        reasons.append("Archive/backup file")
-        if finding.pattern_id == "PI-022":
-            auto_fixable = True
-            fix_action = "redact_credential"
-
-    # Security research / scanner code (discusses injections by design)
-    if any(ind in path_str for ind in SECURITY_RESEARCH_INDICATORS):
-        score -= 25
-        reasons.append("Security research content")
-        auto_fixable = True
-        fix_action = "allowlist"
-
-    # Generated / coverage reports
-    if any(ind in path_str for ind in GENERATED_INDICATORS):
-        score -= 20
-        reasons.append("Generated/coverage file")
-        if finding.pattern_id == "PI-022":
-            auto_fixable = True
-            fix_action = "redact_credential"
-
-    # Self-referential (SecureClaw's own rules/examples)
-    if "secureclaw" in path_str and finding.file_path.suffix in (".py", ".json"):
-        if finding.pattern_id != "PI-022":  # Real creds in secureclaw files still matter
-            score -= 35
-            reasons.append("SecureClaw self-reference")
-            auto_fixable = True
-            fix_action = "allowlist"
-
-    # n8n workflow backups
-    if "n8n" in path_str and path_str.endswith(".json"):
-        score -= 15
-        reasons.append("n8n workflow backup")
-
-    # Package-lock / node lockfiles
-    if finding.file_path.name in ("package-lock.json", "yarn.lock", "pnpm-lock.yaml"):
-        score -= 30
-        reasons.append("Dependency lockfile")
-        auto_fixable = True
-        fix_action = "allowlist"
-
-    # PI-027 (self-reference) is very noisy
-    if finding.pattern_id == "PI-027":
-        if "source" in match_lower and "self" in match_lower:
-            score -= 30
-            reasons.append("'Source: self' citation pattern")
-            auto_fixable = True
-            fix_action = "allowlist"
-
-    # Clamp score
+    score = BASELINE_SCORE + content_adj.delta + path_adj.delta
     score = max(0, min(100, score))
 
-    # Assign triage tier
-    if score >= 60:
+    reasons = content_adj.reasons + path_adj.reasons
+    auto_fixable, fix_action = _merge_fix_action(content_adj, path_adj)
+
+    if score >= TIER_ACT_NOW_MIN:
         triage = Triage.ACT_NOW
-    elif score >= 30:
+    elif score >= TIER_REVIEW_MIN:
         triage = Triage.REVIEW
     else:
         triage = Triage.SUPPRESSED
@@ -174,11 +81,12 @@ def score_finding(finding: Finding) -> Finding:
 
 
 def score_findings(findings: List[Finding]) -> List[Finding]:
-    """Score all findings and sort by confidence (highest first within each tier)."""
+    """Score all findings and sort by confidence (highest first within tier)."""
     for f in findings:
         score_finding(f)
 
-    # Sort: ACT_NOW first, then REVIEW, then SUPPRESSED. Within tier, highest confidence first.
+    # Sort: ACT_NOW first, then REVIEW, then SUPPRESSED. Within tier,
+    # highest confidence first; ties broken by severity sort_key.
     tier_order = {Triage.ACT_NOW: 0, Triage.REVIEW: 1, Triage.SUPPRESSED: 2}
     findings.sort(key=lambda f: (tier_order[f.triage], -f.confidence, f.severity.sort_key))
 
