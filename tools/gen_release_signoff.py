@@ -46,7 +46,10 @@ def main() -> int:
         help="Override today's date (ISO-8601). Useful for deterministic tests.",
     )
     args = ap.parse_args()
-    sys.stdout.write(render(args.version, args.today))
+    # Write UTF-8 bytes explicitly so non-ASCII characters in the template
+    # (e.g., the right-arrow '→') don't crash on Windows where stdout
+    # defaults to cp1252.
+    sys.stdout.buffer.write(render(args.version, args.today).encode("utf-8"))
     return 0
 
 
