@@ -1,0 +1,66 @@
+{
+  "schema_version": 2,
+  "_comment": "Category registry for prompt-injection rule categories. Adding a new category = JSON edit + advisory severity rule. CI loader rejects rules referencing unknown category. See SOURCING.md.",
+  "categories": {
+    "instruction_override": {
+      "display_name": "Instruction Override",
+      "friendly_name": "Trying to override AI rules",
+      "friendly_explanation": "This text tries to make your AI assistant ignore the rules it follows to keep you safe.",
+      "color_tier": "red"
+    },
+    "role_confusion": {
+      "display_name": "Role Confusion",
+      "friendly_name": "Pretending the AI is a different system",
+      "friendly_explanation": "This text tries to convince your AI assistant it is a different program with different rules.",
+      "color_tier": "red"
+    },
+    "system_prompt_extraction": {
+      "display_name": "System Prompt Extraction",
+      "friendly_name": "Trying to read AI's hidden instructions",
+      "friendly_explanation": "This text tries to make your AI assistant reveal its private setup instructions.",
+      "color_tier": "red"
+    },
+    "exfiltration": {
+      "display_name": "Data Exfiltration",
+      "friendly_name": "Trying to send your data somewhere else",
+      "friendly_explanation": "This text could cause your AI assistant to send your private information to a website you don't control.",
+      "color_tier": "red"
+    },
+    "tool_manipulation": {
+      "display_name": "Tool Manipulation",
+      "friendly_name": "Hijacking AI tools",
+      "friendly_explanation": "This text tries to redirect or interfere with the tools your AI assistant uses.",
+      "color_tier": "red"
+    },
+    "mcp_manipulation": {
+      "display_name": "MCP Server Manipulation",
+      "friendly_name": "Tampering with AI tool servers",
+      "friendly_explanation": "This text tries to alter or hijack the servers your AI tools rely on.",
+      "color_tier": "red"
+    },
+    "command_execution": {
+      "display_name": "Command Execution",
+      "friendly_name": "Trying to run commands on your machine",
+      "friendly_explanation": "This text could cause your AI assistant to run shell commands that affect your system.",
+      "color_tier": "red"
+    },
+    "self_reference": {
+      "display_name": "Self Reference",
+      "friendly_name": "Recursion or self-loops",
+      "friendly_explanation": "This text mentions the AI processing itself, which can cause infinite loops or runaway behavior.",
+      "color_tier": "gold"
+    },
+    "encoded_injection": {
+      "display_name": "Encoded Injection",
+      "friendly_name": "Hidden in encoded text",
+      "friendly_explanation": "Suspicious instructions appear to be hidden inside encoded content (e.g., base64) so a casual reader can't see them.",
+      "color_tier": "red"
+    },
+    "invisible_text": {
+      "display_name": "Invisible Text",
+      "friendly_name": "Hidden invisible characters",
+      "friendly_explanation": "This file contains characters that are invisible to humans but readable by AI. Often used to smuggle hidden instructions.",
+      "color_tier": "red"
+    }
+  }
+}

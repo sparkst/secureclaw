@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/sparkst/secureclaw/tests/corpus/expected-schema.json",
+  "title": "SecureClaw Fixture Expectation",
+  "description": "Schema for tests/corpus/**/expected.json — the labeled outcome of a fixture file.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "file", "mode", "source", "license"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 2 },
+    "file": {
+      "type": "string",
+      "description": "Filename of the fixture, relative to expected.json's directory."
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["exact", "superset", "subset"],
+      "description": "exact = scan results MUST equal expected_findings; superset = scan results MUST contain at least these; subset = scan results MUST be a subset of these."
+    },
+    "expected_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pattern_id"],
+        "properties": {
+          "pattern_id": { "type": "string", "pattern": "^PI-[A-Z0-9]+$" },
+          "line": { "type": "integer", "minimum": 1 },
+          "confidence_range": {
+            "type": "array",
+            "items": { "type": "number", "minimum": 0, "maximum": 100 },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      }
+    },
+    "forbidden_findings": {
+      "type": "array",
+      "description": "Pattern IDs that MUST NOT fire on this fixture.",
+      "items": { "type": "string", "pattern": "^PI-[A-Z0-9]+$" }
+    },
+    "source": {
+      "type": "string",
+      "description": "Provenance: CVE ID, advisory URL, research paper, or 'own work' for hand-crafted."
+    },
+    "license": {
+      "type": "string",
+      "description": "License of the fixture content (e.g., 'MIT (own work)', 'CC-BY-4.0')."
+    },
+    "category": { "type": "string" },
+    "added_in_pr": { "type": "string" },
+    "anonymization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applied"],
+      "properties": {
+        "applied": { "type": "boolean" },
+        "attestation_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "human_reviewer_2_handle": { "type": "string" }
+      }
+    }
+  }
+}

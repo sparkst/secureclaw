@@ -757,6 +757,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Port to bind to (default: random available port)",
     )
 
+    # dev subcommand tree (internal; not for customer use)
+    from secureclaw.dev.cli import add_dev_parser
+
+    add_dev_parser(subparsers)
+
     return parser
 
 
@@ -813,6 +818,10 @@ def main(argv: Optional[List[str]] = None) -> None:
                 sys.exit(cmd_allowlist_remove(args))
             else:
                 parser.parse_args(["allowlist", "--help"])
+        elif args.command == "dev":
+            from secureclaw.dev.cli import cmd_dev
+
+            sys.exit(cmd_dev(args))
         else:
             parser.print_help()
     except KeyboardInterrupt:

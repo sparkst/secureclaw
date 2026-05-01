@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/sparkst/secureclaw/tests/quality_gates_schema.json",
+  "title": "Quality Gates",
+  "description": "Strict schema for tests/quality_gates.json. Foundation PR-G replaces placeholder values with measured baseline. CI gate refuses placeholders post-PR-G.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "thresholds",
+    "baseline_commit",
+    "baseline_recorded_date",
+    "baseline_metrics"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "_comment": { "type": "string" },
+    "_baseline_pending": { "type": "string" },
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "positive_recall_min",
+        "negative_fp_max",
+        "regression_recall_min",
+        "pint_precision_no_regression",
+        "pint_recall_no_regression",
+        "scan_throughput_files_per_sec_min",
+        "memory_peak_mb_max_per_scan"
+      ],
+      "properties": {
+        "positive_recall_min": { "type": "number", "minimum": 0, "maximum": 1 },
+        "negative_fp_max": { "type": "number", "minimum": 0, "maximum": 1 },
+        "regression_recall_min": { "type": "number", "minimum": 0, "maximum": 1 },
+        "pint_precision_no_regression": { "type": "boolean" },
+        "pint_recall_no_regression": { "type": "boolean" },
+        "scan_throughput_files_per_sec_min": { "type": "number", "minimum": 0 },
+        "memory_peak_mb_max_per_scan": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "baseline_commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$",
+      "description": "40-char SHA of the baseline-measurement commit. Placeholder is forty zeros; CI gate post-PR-G rejects."
+    },
+    "baseline_recorded_date": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO 8601 date when baseline was measured. Placeholder is 1970-01-01; CI gate post-PR-G rejects."
+    },
+    "baseline_metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pint_precision",
+        "pint_recall",
+        "hackaprompt_precision",
+        "hackaprompt_recall"
+      ],
+      "properties": {
+        "pint_precision": { "type": "number", "minimum": 0, "maximum": 1 },
+        "pint_recall": { "type": "number", "minimum": 0, "maximum": 1 },
+        "hackaprompt_precision": { "type": "number", "minimum": 0, "maximum": 1 },
+        "hackaprompt_recall": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  }
+}
