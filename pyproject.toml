@@ -27,9 +27,22 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Security",
 ]
+# Runtime dependencies. Per v1.3-plan-v10 §B.8 + §G.0: stdlib-only EXCEPT
+# these explicitly approved permissive deps:
+#   regex      — Unicode property classes (\p{Lu}|\p{Lo}) for sentence
+#                segmentation across CJK/Arabic/Latin; per-match `timeout=`
+#                parameter for ReDoS protection. Apache-2.0.
+#   send2trash — cross-platform recoverable delete (XDG trash on Linux,
+#                Finder Trash on macOS, Recycle Bin on Windows). BSD-3.
+# regex pinned exactly; send2trash range-pinned. Dependabot config
+# (PR-J2) auto-merges patch/minor updates after CI green.
+dependencies = [
+    "regex==2024.11.6",
+    "send2trash>=1.8,<2.0",
+]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0", "ruff>=0.4"]
+dev = ["pytest>=7.0", "ruff>=0.4", "PyYAML>=6.0"]
 
 [project.scripts]
 secureclaw = "secureclaw.cli:main"
