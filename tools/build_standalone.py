@@ -32,6 +32,7 @@ SECTIONS = [
     ("HTML Reporter", SRC / "reporters" / "html_report.py"),
     ("JSON Reporter", SRC / "reporters" / "json_report.py"),
     ("GUI Server", SRC / "gui.py"),
+    ("Dev CLI Subcommands", SRC / "dev" / "cli.py"),
     ("CLI", SRC / "cli.py"),
 ]
 
