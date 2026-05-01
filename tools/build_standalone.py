@@ -29,6 +29,7 @@ SECTIONS = [
     ("Match Quality Scoring (content-only)", SRC / "core" / "match_quality.py"),
     ("Path Heuristics Scoring (path-only)", SRC / "core" / "path_heuristics.py"),
     ("Confidence Scoring (composer)", SRC / "core" / "confidence.py"),
+    ("Symlink-Safe Filesystem Primitives", SRC / "core" / "safe_fs.py"),
     ("GUI Security Primitives", SRC / "core" / "gui_security.py"),
     ("Auto-Remediation", SRC / "core" / "remediate.py"),
     ("Posture Analyzer", SRC / "posture" / "analyzer.py"),
