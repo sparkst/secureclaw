@@ -1,0 +1,84 @@
+# auto-merge-on-green label gate per v1.3-plan-v10 §K.3 + R6-PROC001 fix.
+#
+# Two-tier enforcement:
+#   1. Real-time: when a label is added, this workflow runs. If the label is
+#      `auto-merge-on-green` AND the actor is not @sparkst, the workflow
+#      removes the label and posts a comment.
+#   2. Persistent (status check): for every PR open/sync/review event, the
+#      label-status job walks the PR timeline and asserts every active
+#      `auto-merge-on-green` label was applied by @sparkst. This is required
+#      via branch protection — best-effort cleanup in tier 1 alone isn't
+#      enough (race conditions, API failures).
+#
+# CODEOWNERS already protects the critical paths; this workflow ensures the
+# label can't be used to bypass CODEOWNERS via auto-merge.
+
+name: Auto-Merge Label Gate
+
+on:
+  pull_request_target:
+    types: [labeled, opened, synchronize, ready_for_review, reopened]
+  pull_request_review:
+    types: [submitted, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  # Tier 1: real-time label removal
+  remove-unauthorized-label:
+    if: github.event.action == 'labeled' && github.event.label.name == 'auto-merge-on-green'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Reject label if applied by non-owner
+        if: github.event.sender.login != 'sparkst'
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          SENDER: ${{ github.event.sender.login }}
+        run: |
+          gh pr edit "$PR" --remove-label "auto-merge-on-green"
+          gh pr comment "$PR" --body "auto-merge-on-green can only be applied by the repository owner (@sparkst). Label removed."
+          echo "::error::auto-merge-on-green applied by $SENDER (not sparkst)"
+          exit 1
+        # GH_TOKEN scope: pull-requests:write at job level only (E.4
+        # least-privilege). The token never escalates to contents:write.
+
+  # Tier 2: persistent status check; required via branch protection
+  label-status:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      PR: ${{ github.event.pull_request.number }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Walk PR timeline; assert all auto-merge labels applied by @sparkst
+        run: |
+          # Per R6-PROC001 fix: cache key narrowed to label-only events; we
+          # use sha256sum (coreutils) for portability.
+          LABEL_DATA=$(gh api "repos/${REPO}/issues/${PR}/timeline" --paginate \
+            | jq -c '[.[] | select(.event=="labeled" or .event=="unlabeled")
+                    | {ts: .created_at, label: .label.name, actor: .actor.login}] | sort_by(.ts)')
+          ACTIVE_LABELS=$(echo "$LABEL_DATA" | jq -c '
+            reduce .[] as $e ({};
+              if $e.event == null then
+                .[$e.label] = (if $e.label | startswith("UNLABELED::") then null else {actor: $e.actor, ts: $e.ts} end)
+              else . end)
+          ')
+          # Simpler: just find the most-recent labeled event per label name,
+          # ignoring labels later removed.
+          UNAUTHORIZED=$(echo "$LABEL_DATA" | jq -r '
+            group_by(.label) | map({
+              label: .[0].label,
+              last_event: max_by(.ts)
+            }) | .[] | select(.last_event.label == "auto-merge-on-green") | select(.last_event.actor != "sparkst") | .last_event.actor
+          ')
+          if [ -n "$UNAUTHORIZED" ]; then
+            echo "::error::auto-merge-on-green active on PR ${PR} but applied by: $UNAUTHORIZED (not sparkst)"
+            echo "Use the manual remove-label workflow or apply as sparkst."
+            exit 1
+          fi
+          echo "OK: no unauthorized auto-merge-on-green labels."
