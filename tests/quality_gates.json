@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "_comment": "Authoritative quality gates. Loosening a gate requires a dedicated PR labeled `gates-change` with rationale (REQ-14). Baseline placeholder values populated by Foundation PR-G; CI rejects placeholder substrings post-PR-G via tests/quality_gates_schema.json strict validation.",
+  "thresholds": {
+    "positive_recall_min": 0.95,
+    "negative_fp_max": 0.05,
+    "regression_recall_min": 1.0,
+    "pint_precision_no_regression": true,
+    "pint_recall_no_regression": true,
+    "scan_throughput_files_per_sec_min": 30,
+    "memory_peak_mb_max_per_scan": 512
+  },
+  "_baseline_pending": "PR-G must replace these placeholder values with measured numbers from tests/benchmarks/baseline.json",
+  "baseline_commit": "0000000000000000000000000000000000000000",
+  "baseline_recorded_date": "1970-01-01",
+  "baseline_metrics": {
+    "pint_precision": 0.0,
+    "pint_recall": 0.0,
+    "hackaprompt_precision": 0.0,
+    "hackaprompt_recall": 0.0
+  }
+}
