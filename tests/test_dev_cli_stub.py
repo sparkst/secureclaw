@@ -37,11 +37,15 @@ def test_dev_rule_returns_zero_on_stub() -> None:
     assert rc == 0
 
 
-def test_dev_bench_returns_zero_on_stub() -> None:
+def test_dev_bench_run_no_suite_exits_2() -> None:
+    """PR-E replaces the bench stub with a real implementation. ``run`` now
+    requires a positional <suite>; calling without it triggers argparse exit."""
+    import pytest
+
     parser = build_parser()
-    args = parser.parse_args(["dev", "bench", "run"])
-    rc = cmd_dev(args)
-    assert rc == 0
+    with pytest.raises(SystemExit) as exc:
+        parser.parse_args(["dev", "bench", "run"])
+    assert exc.value.code == 2
 
 
 def test_dev_no_subcommand_returns_two() -> None:
@@ -52,14 +56,13 @@ def test_dev_no_subcommand_returns_two() -> None:
 
 
 def test_dev_message_mentions_scaffolding(capsys) -> None:
-    """Stubbed verbs (bench/fed/sync/triage) still print a scaffolding hint.
+    """Stubbed verbs (fed/sync/triage) still print a scaffolding hint.
 
-    PR-C replaced corpus with a real implementation; PR-D replaced rule with
-    a real implementation. This test now uses `bench` (still stubbed) to
-    verify the scaffolding message.
+    PR-C replaced corpus, PR-D replaced rule, PR-E replaced bench. This test
+    now uses ``fed`` (still stubbed) to verify the scaffolding message.
     """
     parser = build_parser()
-    args = parser.parse_args(["dev", "bench", "run"])
+    args = parser.parse_args(["dev", "fed", "dispatch"])
     cmd_dev(args)
     captured = capsys.readouterr()
     assert "scaffolding" in captured.err.lower()
