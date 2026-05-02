@@ -6,11 +6,8 @@ TDD red phase: lands BEFORE the runner module is implemented.
 from __future__ import annotations
 
 import json
-import time
 from pathlib import Path
-from typing import List
-
-import pytest
+from typing import List, Optional
 
 
 def _write_fixture(
@@ -19,11 +16,11 @@ def _write_fixture(
     body: str,
     *,
     mode: str,
-    expected_pattern_ids: List[str] = None,
-    forbidden_findings: List[str] = None,
+    expected_pattern_ids: Optional[List[str]] = None,
+    forbidden_findings: Optional[List[str]] = None,
     source: str = "own work",
     license_str: str = "MIT (own work)",
-    extra: dict = None,
+    extra: Optional[dict] = None,
 ) -> None:
     """Helper: write a fixture content file + sidecar expected.json."""
     expected_pattern_ids = expected_pattern_ids or []
@@ -70,7 +67,9 @@ def test_run_bench_corpus_basic(tmp_path: Path) -> None:
 
     corpus = tmp_path / "corpus"
     _make_corpus(corpus)
-    rules_file = Path(__file__).resolve().parent.parent / "secureclaw" / "rules" / "default_rules.json"
+    rules_file = (
+        Path(__file__).resolve().parent.parent / "secureclaw" / "rules" / "default_rules.json"
+    )
 
     result = run_bench(
         "corpus",
@@ -265,7 +264,9 @@ def test_run_bench_time_budget_marks_dos_fail(tmp_path: Path, monkeypatch) -> No
 
     corpus = tmp_path / "corpus"
     _make_corpus(corpus)
-    rules_file = Path(__file__).resolve().parent.parent / "secureclaw" / "rules" / "default_rules.json"
+    rules_file = (
+        Path(__file__).resolve().parent.parent / "secureclaw" / "rules" / "default_rules.json"
+    )
 
     # Patch _scan_with_budget to simulate a slow scan that times out.
     def _slow(path, engine, time_budget_ms):  # type: ignore[no-untyped-def]
@@ -317,7 +318,9 @@ def test_run_bench_records_metadata(tmp_path: Path) -> None:
 
     corpus = tmp_path / "corpus"
     _make_corpus(corpus)
-    rules_file = Path(__file__).resolve().parent.parent / "secureclaw" / "rules" / "default_rules.json"
+    rules_file = (
+        Path(__file__).resolve().parent.parent / "secureclaw" / "rules" / "default_rules.json"
+    )
 
     result = run_bench("corpus", rules_file=rules_file, corpus_root=corpus, time_budget_ms=5000)
     assert result.secureclaw_version
