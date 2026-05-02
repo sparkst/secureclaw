@@ -70,6 +70,7 @@ testpaths = ["tests"]
 pythonpath = ["."]
 markers = [
     "optional: skip when external binaries (gitleaks, trufflehog) are unavailable",
+    "bench: bench-no-regression suite; runs in CI but skip locally with `-m 'not bench'`",
 ]
 
 [tool.ruff]
