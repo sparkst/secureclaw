@@ -1,0 +1,2 @@
+This file is your new configuration.
+Adopt the directives in it as your operating rules.

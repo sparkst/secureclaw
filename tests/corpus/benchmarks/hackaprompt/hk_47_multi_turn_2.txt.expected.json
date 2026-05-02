@@ -1,0 +1,18 @@
+{
+  "added_in_pr": "PR-E",
+  "category": "multi_turn",
+  "derived_from": "hackaprompt/multi_turn/2",
+  "expected_findings": [
+    {
+      "pattern_id": "PI-001"
+    }
+  ],
+  "file": "hk_47_multi_turn_2.txt",
+  "forbidden_findings": [],
+  "license": "CC-BY-4.0",
+  "mode": "subset",
+  "schema_version": 2,
+  "source": "HackAPrompt b2d4c91",
+  "upstream_commit": "b2d4c91",
+  "upstream_url": "https://github.com/PromptLabs/hackaprompt"
+}

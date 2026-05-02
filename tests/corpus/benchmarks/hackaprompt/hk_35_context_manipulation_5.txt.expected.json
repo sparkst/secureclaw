@@ -1,0 +1,18 @@
+{
+  "added_in_pr": "PR-E",
+  "category": "context_manipulation",
+  "derived_from": "hackaprompt/context_manipulation/5",
+  "expected_findings": [
+    {
+      "pattern_id": "PI-001"
+    }
+  ],
+  "file": "hk_35_context_manipulation_5.txt",
+  "forbidden_findings": [],
+  "license": "CC-BY-4.0",
+  "mode": "subset",
+  "schema_version": 2,
+  "source": "HackAPrompt b2d4c91",
+  "upstream_commit": "b2d4c91",
+  "upstream_url": "https://github.com/PromptLabs/hackaprompt"
+}

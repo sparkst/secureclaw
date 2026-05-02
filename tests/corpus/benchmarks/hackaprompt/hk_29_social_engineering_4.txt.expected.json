@@ -1,0 +1,18 @@
+{
+  "added_in_pr": "PR-E",
+  "category": "social_engineering",
+  "derived_from": "hackaprompt/social_engineering/4",
+  "expected_findings": [
+    {
+      "pattern_id": "PI-001"
+    }
+  ],
+  "file": "hk_29_social_engineering_4.txt",
+  "forbidden_findings": [],
+  "license": "CC-BY-4.0",
+  "mode": "subset",
+  "schema_version": 2,
+  "source": "HackAPrompt b2d4c91",
+  "upstream_commit": "b2d4c91",
+  "upstream_url": "https://github.com/PromptLabs/hackaprompt"
+}

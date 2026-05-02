@@ -1,0 +1,18 @@
+{
+  "added_in_pr": "PR-E",
+  "category": "multi_turn",
+  "derived_from": "PINT/multi_turn/1",
+  "expected_findings": [
+    {
+      "pattern_id": "PI-001"
+    }
+  ],
+  "file": "pint_41_multi_turn_1.txt",
+  "forbidden_findings": [],
+  "license": "MIT",
+  "mode": "subset",
+  "schema_version": 2,
+  "source": "Lakera PINT v8a3f5e7",
+  "upstream_commit": "v8a3f5e7",
+  "upstream_url": "https://github.com/lakeraai/pint-benchmark"
+}

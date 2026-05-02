@@ -1,0 +1,18 @@
+{
+  "added_in_pr": "PR-E",
+  "category": "encoding_attack",
+  "derived_from": "hackaprompt/encoding_attack/2",
+  "expected_findings": [
+    {
+      "pattern_id": "PI-001"
+    }
+  ],
+  "file": "hk_37_encoding_attack_2.txt",
+  "forbidden_findings": [],
+  "license": "CC-BY-4.0",
+  "mode": "subset",
+  "schema_version": 2,
+  "source": "HackAPrompt b2d4c91",
+  "upstream_commit": "b2d4c91",
+  "upstream_url": "https://github.com/PromptLabs/hackaprompt"
+}
