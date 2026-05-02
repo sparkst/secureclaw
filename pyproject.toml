@@ -42,7 +42,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0", "ruff>=0.4", "PyYAML>=6.0", "packaging>=23.0"]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.4",
+    "PyYAML>=6.0",
+    "packaging>=23.0",
+    "jsonschema>=4.0",
+    "hypothesis>=6.0",
+]
 
 [project.scripts]
 secureclaw = "secureclaw.cli:main"
@@ -61,6 +68,9 @@ packages = ["secureclaw"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+    "optional: skip when external binaries (gitleaks, trufflehog) are unavailable",
+]
 
 [tool.ruff]
 target-version = "py39"

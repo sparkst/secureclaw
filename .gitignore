@@ -12,3 +12,5 @@ build/
 .ruff_cache/
 .DS_Store
 .qralph/
+.qreview/
+.review-artifacts/
