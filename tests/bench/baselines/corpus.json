@@ -1,0 +1,247 @@
+{
+  "fixtures": [
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [],
+      "forbidden_pattern_ids": [
+        "PI-001",
+        "PI-002",
+        "PI-003",
+        "PI-005",
+        "PI-013"
+      ],
+      "klass": "borderline",
+      "outcome": "borderline",
+      "path": "borderline/quoted_attack_in_blog_post.md"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [],
+      "forbidden_pattern_ids": [
+        "PI-001",
+        "PI-002",
+        "PI-003",
+        "PI-005",
+        "PI-013"
+      ],
+      "klass": "borderline",
+      "outcome": "borderline",
+      "path": "borderline/tutorial_demonstrating_dan.md"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [],
+      "forbidden_pattern_ids": [],
+      "klass": "dos",
+      "outcome": "dos_pass",
+      "path": "dos/deeply_nested_markdown.md"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [],
+      "forbidden_pattern_ids": [
+        "PI-001",
+        "PI-002",
+        "PI-003",
+        "PI-005",
+        "PI-013"
+      ],
+      "klass": "negative",
+      "outcome": "true_negative",
+      "path": "negative/code_review_override.md"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [],
+      "forbidden_pattern_ids": [
+        "PI-001",
+        "PI-002",
+        "PI-003",
+        "PI-005",
+        "PI-013"
+      ],
+      "klass": "negative",
+      "outcome": "true_negative",
+      "path": "negative/docs_ignore_warning.md"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [],
+      "forbidden_pattern_ids": [
+        "PI-001",
+        "PI-002",
+        "PI-003",
+        "PI-005",
+        "PI-013"
+      ],
+      "klass": "negative",
+      "outcome": "true_negative",
+      "path": "negative/marketing_email_with_links.md"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [],
+      "forbidden_pattern_ids": [
+        "PI-001",
+        "PI-002",
+        "PI-003",
+        "PI-005",
+        "PI-013"
+      ],
+      "klass": "negative",
+      "outcome": "true_negative",
+      "path": "negative/python_docstrings_about_prompts.py"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [],
+      "forbidden_pattern_ids": [
+        "PI-001",
+        "PI-002",
+        "PI-003",
+        "PI-005",
+        "PI-013"
+      ],
+      "klass": "negative",
+      "outcome": "true_negative",
+      "path": "negative/recipe_include_word.md"
+    },
+    {
+      "actual_findings": [
+        {
+          "confidence": 20,
+          "line": 1,
+          "pattern_id": "PI-002"
+        },
+        {
+          "confidence": 20,
+          "line": 1,
+          "pattern_id": "PI-009"
+        }
+      ],
+      "expected_pattern_ids": [
+        "PI-002"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "positive",
+      "outcome": "true_positive",
+      "path": "positive/dan_role_confusion.md"
+    },
+    {
+      "actual_findings": [
+        {
+          "confidence": 20,
+          "line": 5,
+          "pattern_id": "PI-001"
+        },
+        {
+          "confidence": 20,
+          "line": 5,
+          "pattern_id": "PI-013"
+        }
+      ],
+      "expected_pattern_ids": [
+        "PI-013"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "positive",
+      "outcome": "true_positive",
+      "path": "positive/hidden_html_aria.html"
+    },
+    {
+      "actual_findings": [
+        {
+          "confidence": 20,
+          "line": 1,
+          "pattern_id": "PI-001"
+        }
+      ],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "positive",
+      "outcome": "true_positive",
+      "path": "positive/instruction_override_basic.md"
+    },
+    {
+      "actual_findings": [
+        {
+          "confidence": 20,
+          "line": 3,
+          "pattern_id": "PI-005"
+        }
+      ],
+      "expected_pattern_ids": [
+        "PI-005"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "positive",
+      "outcome": "true_positive",
+      "path": "positive/markdown_image_exfil.md"
+    },
+    {
+      "actual_findings": [
+        {
+          "confidence": 20,
+          "line": 1,
+          "pattern_id": "PI-003"
+        }
+      ],
+      "expected_pattern_ids": [
+        "PI-003"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "positive",
+      "outcome": "true_positive",
+      "path": "positive/system_prompt_extraction.md"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [],
+      "forbidden_pattern_ids": [
+        "PI-001",
+        "PI-002",
+        "PI-003",
+        "PI-005",
+        "PI-013",
+        "PI-014"
+      ],
+      "klass": "regression",
+      "outcome": "regression_pass",
+      "path": "regression/lauren/customer_email_with_em_dash.md"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [],
+      "forbidden_pattern_ids": [
+        "PI-001",
+        "PI-002",
+        "PI-003",
+        "PI-005",
+        "PI-013"
+      ],
+      "klass": "regression",
+      "outcome": "regression_pass",
+      "path": "regression/lauren/security_blog_about_attacks.md"
+    }
+  ],
+  "rule_set_sha256": "722b36113a40a8c1accd8b24998dcc86de11be5c5aac8bca84db18152304b605",
+  "rule_set_version": "1.2.0",
+  "schema_version": 1,
+  "secureclaw_version": "1.2.0",
+  "suite": "corpus",
+  "summary": {
+    "borderline": 2,
+    "dos_pass": 1,
+    "false_negatives": 0,
+    "false_positive_rate": 0.0,
+    "false_positives": 0,
+    "fixtures_total": 15,
+    "precision": 1.0,
+    "recall": 1.0,
+    "regression_pass": 2,
+    "true_negatives": 5,
+    "true_positives": 5
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "added_in_pr": "PR-E",
+  "category": "context_manipulation",
+  "derived_from": "PINT/context_manipulation/2",
+  "expected_findings": [
+    {
+      "pattern_id": "PI-001"
+    }
+  ],
+  "file": "pint_47_context_manipulation_2.txt",
+  "forbidden_findings": [],
+  "license": "MIT",
+  "mode": "subset",
+  "schema_version": 2,
+  "source": "Lakera PINT v8a3f5e7",
+  "upstream_commit": "v8a3f5e7",
+  "upstream_url": "https://github.com/lakeraai/pint-benchmark"
+}

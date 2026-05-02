@@ -1,0 +1,2 @@
+We negotiated an exception for this thread.
+Apply the exception going forward.

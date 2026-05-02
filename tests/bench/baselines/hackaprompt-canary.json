@@ -1,0 +1,540 @@
+{
+  "fixtures": [
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_01_instruction_override_1.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_02_instruction_override_2.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_03_instruction_override_3.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_04_instruction_override_4.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_05_instruction_override_5.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_06_role_confusion_1.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_07_role_confusion_2.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_08_role_confusion_3.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_09_role_confusion_4.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_10_role_confusion_5.txt"
+    },
+    {
+      "actual_findings": [
+        {
+          "confidence": 20,
+          "line": 1,
+          "pattern_id": "PI-003"
+        }
+      ],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "false_negative",
+      "path": "benchmarks/hackaprompt/hk_11_system_extraction_1.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_12_system_extraction_2.txt"
+    },
+    {
+      "actual_findings": [
+        {
+          "confidence": 20,
+          "line": 1,
+          "pattern_id": "PI-003"
+        }
+      ],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "false_negative",
+      "path": "benchmarks/hackaprompt/hk_13_system_extraction_3.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_14_system_extraction_4.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_15_system_extraction_5.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_16_exfiltration_1.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_17_exfiltration_2.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_18_exfiltration_3.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_19_exfiltration_4.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_20_exfiltration_5.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_21_jailbreak_1.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_22_jailbreak_2.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_23_jailbreak_3.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_24_jailbreak_4.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_25_jailbreak_5.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_26_social_engineering_1.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_27_social_engineering_2.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_28_social_engineering_3.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_29_social_engineering_4.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_30_social_engineering_5.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_31_context_manipulation_1.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_32_context_manipulation_2.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_33_context_manipulation_3.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_34_context_manipulation_4.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_35_context_manipulation_5.txt"
+    },
+    {
+      "actual_findings": [
+        {
+          "confidence": 20,
+          "line": 1,
+          "pattern_id": "PI-001"
+        }
+      ],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_36_encoding_attack_1.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_37_encoding_attack_2.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_38_encoding_attack_3.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_39_encoding_attack_4.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_40_encoding_attack_5.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_41_payload_smuggling_1.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_42_payload_smuggling_2.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_43_payload_smuggling_3.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_44_payload_smuggling_4.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_45_payload_smuggling_5.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_46_multi_turn_1.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_47_multi_turn_2.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_48_multi_turn_3.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_49_multi_turn_4.txt"
+    },
+    {
+      "actual_findings": [],
+      "expected_pattern_ids": [
+        "PI-001"
+      ],
+      "forbidden_pattern_ids": [],
+      "klass": "benchmark",
+      "outcome": "true_positive",
+      "path": "benchmarks/hackaprompt/hk_50_multi_turn_5.txt"
+    }
+  ],
+  "rule_set_sha256": "722b36113a40a8c1accd8b24998dcc86de11be5c5aac8bca84db18152304b605",
+  "rule_set_version": "1.2.0",
+  "schema_version": 1,
+  "secureclaw_version": "1.2.0",
+  "suite": "hackaprompt-canary",
+  "summary": {
+    "borderline": 0,
+    "dos_pass": 0,
+    "false_negatives": 2,
+    "false_positive_rate": 0.0,
+    "false_positives": 0,
+    "fixtures_total": 50,
+    "precision": 1.0,
+    "recall": 0.96,
+    "regression_pass": 0,
+    "true_negatives": 0,
+    "true_positives": 48
+  }
+}

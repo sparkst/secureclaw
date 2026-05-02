@@ -40,6 +40,18 @@ def test_corpus_top_files_exist() -> None:
 
 
 def test_corpus_dirs_have_gitkeep() -> None:
+    """Each scaffolded dir is committed.
+
+    A ``.gitkeep`` placeholder is required only when the directory would
+    otherwise be empty. Once a directory has real fixtures (e.g. PR-E adds
+    benchmark canaries under ``benchmarks/{pint,hackaprompt}``), the
+    placeholder becomes redundant — the directory is already tracked by its
+    real files.
+    """
     for relpath in EXPECTED_DIRS:
-        gk = CORPUS_ROOT / relpath / ".gitkeep"
-        assert gk.exists(), f"missing .gitkeep in {gk.parent}"
+        d = CORPUS_ROOT / relpath
+        gk = d / ".gitkeep"
+        if gk.exists():
+            continue
+        contents = [p for p in d.iterdir() if p.name != ".gitkeep"]
+        assert contents, f"missing .gitkeep in {d} (and the directory is empty)"

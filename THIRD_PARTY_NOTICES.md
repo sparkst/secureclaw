@@ -54,6 +54,15 @@ _Generated from `secureclaw/rules/default_rules.json` `sources[]` metadata._
 |---|---|---|---|---|---|
 | _28 rules_ | (own work — `MIT`) | MIT | n/a | n/a | identical |
 
+## Vendored Benchmark Fixtures
+
+_Generated from ``tests/corpus/benchmarks/*/*.expected.json``._
+
+| Suite | Upstream | License | Commit | Fixtures |
+|---|---|---|---|---|
+| `hackaprompt` | <https://github.com/PromptLabs/hackaprompt> | CC-BY-4.0 | `b2d4c91` | 50 |
+| `pint` | <https://github.com/lakeraai/pint-benchmark> | MIT | `v8a3f5e7` | 50 |
+
 ---
 
 For corrections, open a PR that updates the rule's ``sources[]`` field in ``secureclaw/rules/default_rules.json`` (or the ``DEP_LICENSE_TABLE`` in this generator), then re-run the generator and commit the diff.

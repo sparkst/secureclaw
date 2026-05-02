@@ -29,6 +29,7 @@ ROOT = Path(__file__).parent.parent
 RULES_PATH = ROOT / "secureclaw" / "rules" / "default_rules.json"
 PYPROJECT_PATH = ROOT / "pyproject.toml"
 OUTPUT_PATH = ROOT / "THIRD_PARTY_NOTICES.md"
+BENCHMARK_DIR = ROOT / "tests" / "corpus" / "benchmarks"
 
 # SPDX allowlist + denylist per v1.3-plan-v10 §C.4.
 SPDX_ALLOWLIST = frozenset(
@@ -228,6 +229,60 @@ are re-derived from clean upstream sources cited in the rule's ``sources[]``.
 """
 
 
+def _format_benchmark_table() -> List[str]:
+    """Build a table of vendored benchmark fixtures (PR-E §7).
+
+    Aggregates ``tests/corpus/benchmarks/*/<fixture>.expected.json`` by
+    upstream URL so each upstream dataset appears as one row.
+    """
+    lines = [
+        "## Vendored Benchmark Fixtures\n",
+        "_Generated from ``tests/corpus/benchmarks/*/*.expected.json``._",
+        "",
+        "| Suite | Upstream | License | Commit | Fixtures |",
+        "|---|---|---|---|---|",
+    ]
+    if not BENCHMARK_DIR.is_dir():
+        lines.append("| _none_ | | | | 0 |")
+        return lines
+
+    aggregates: Dict[str, Dict[str, Any]] = {}
+    for suite_dir in sorted(BENCHMARK_DIR.iterdir()):
+        if not suite_dir.is_dir():
+            continue
+        for meta in sorted(suite_dir.glob("*.expected.json")):
+            try:
+                data = json.loads(meta.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            url = data.get("upstream_url", "")
+            if not url:
+                continue
+            agg = aggregates.setdefault(
+                f"{suite_dir.name}|{url}",
+                {
+                    "suite": suite_dir.name,
+                    "url": url,
+                    "license": data.get("license", "?"),
+                    "commit": data.get("upstream_commit", "?"),
+                    "count": 0,
+                },
+            )
+            agg["count"] += 1
+
+    if not aggregates:
+        lines.append("| _none_ | | | | 0 |")
+        return lines
+
+    for agg in sorted(aggregates.values(), key=lambda a: (a["suite"], a["url"])):
+        commit = agg["commit"]
+        short = commit[:8] if commit and commit != "?" else "?"
+        lines.append(
+            f"| `{agg['suite']}` | <{agg['url']}> | {agg['license']} | `{short}` | {agg['count']} |"
+        )
+    return lines
+
+
 def render() -> str:
     rules = json.loads(RULES_PATH.read_text(encoding="utf-8"))
     pyproject_text = PYPROJECT_PATH.read_text(encoding="utf-8")
@@ -239,6 +294,8 @@ def render() -> str:
     parts.append("\n".join(_format_dep_table(deps["dev"], "Development Dependencies")))
     parts.append("")
     parts.append("\n".join(_format_pattern_table(rules.get("patterns", []))))
+    parts.append("")
+    parts.append("\n".join(_format_benchmark_table()))
     parts.append("")
     parts.append(
         "---\n\n"
