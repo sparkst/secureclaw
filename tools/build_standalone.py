@@ -50,6 +50,13 @@ SECTIONS = [
     ("Dev Rule Runner", SRC / "dev" / "rule" / "runner.py"),
     ("Dev Rule Validator", SRC / "dev" / "rule" / "validator.py"),
     ("Dev Rule CLI", SRC / "dev" / "rule" / "cli.py"),
+    ("Dev Bench Models", SRC / "dev" / "bench" / "models.py"),
+    ("Dev Bench Baseline", SRC / "dev" / "bench" / "baseline.py"),
+    ("Dev Bench Runner", SRC / "dev" / "bench" / "runner.py"),
+    ("Dev Bench Diff", SRC / "dev" / "bench" / "diff.py"),
+    ("Dev Bench PINT Loader", SRC / "dev" / "bench" / "pint.py"),
+    ("Dev Bench HackAPrompt Loader", SRC / "dev" / "bench" / "hackaprompt.py"),
+    ("Dev Bench CLI", SRC / "dev" / "bench" / "cli.py"),
     ("Dev CLI Subcommands", SRC / "dev" / "cli.py"),
     ("CLI", SRC / "cli.py"),
 ]

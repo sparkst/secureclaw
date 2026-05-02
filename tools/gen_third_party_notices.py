@@ -258,7 +258,6 @@ def _format_benchmark_table() -> List[str]:
             url = data.get("upstream_url", "")
             if not url:
                 continue
-            key = (suite_dir.name, url)
             agg = aggregates.setdefault(
                 f"{suite_dir.name}|{url}",
                 {
@@ -279,8 +278,7 @@ def _format_benchmark_table() -> List[str]:
         commit = agg["commit"]
         short = commit[:8] if commit and commit != "?" else "?"
         lines.append(
-            f"| `{agg['suite']}` | <{agg['url']}> | {agg['license']} | "
-            f"`{short}` | {agg['count']} |"
+            f"| `{agg['suite']}` | <{agg['url']}> | {agg['license']} | `{short}` | {agg['count']} |"
         )
     return lines
 
