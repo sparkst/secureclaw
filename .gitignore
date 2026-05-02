@@ -12,3 +12,7 @@ build/
 .ruff_cache/
 .DS_Store
 .qralph/
+.qreview/
+.review-artifacts/
+# Working-session notes (live in repo root for convenience, not tracked)
+Sparkry.AI*.md

@@ -40,6 +40,8 @@ are re-derived from clean upstream sources cited in the rule's ``sources[]``.
 | Package | Version | License | Role |
 |---|---|---|---|
 | `PyYAML` | `>=6.0` | MIT | YAML parsing (dev only — workflow tests) |
+| `hypothesis` | `>=6.0` | MPL-2.0 | Property-based PEM line-count tests (dev only) |
+| `jsonschema` | `>=4.0` | MIT | Validate corpus expected.json against schema (dev only) |
 | `packaging` | `>=23.0` | Apache-2.0 OR BSD-2-Clause | Semver parsing for REQ-15 (dev only) |
 | `pytest` | `>=7.0` | MIT | Test framework (dev only) |
 | `ruff` | `>=0.4` | MIT | Lint + format (dev only) |

@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "file": "markdown_image_exfil.md",
+  "mode": "superset",
+  "expected_findings": [
+    {"pattern_id": "PI-005", "line": 3, "confidence_range": [25, 100]}
+  ],
+  "forbidden_findings": [],
+  "source": "own work — synthetic markdown-image exfil pattern (EchoLeak family)",
+  "license": "MIT (own work)",
+  "category": "reference_link_exfil",
+  "added_in_pr": "#23",
+  "anonymization": {"applied": false}
+}

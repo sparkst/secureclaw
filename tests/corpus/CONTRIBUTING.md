@@ -10,28 +10,56 @@
 | `regression/` | Locked test for a specific reported bug or false positive. | Must reference the issue/PR or transcript timestamp that motivated it. |
 | `dos/` | Adversarial input designed to exercise B.2 caps. | Must complete within the per-file budget; CI enforces. |
 
-## How to add
+## How to add (v2 two-step workflow per PR-C)
+
+### Step 1 — anonymize (separate operation)
+
+If the source content originates from a real machine, run the anonymizer
+first into a scratch directory you do not commit:
 
 ```bash
-# Use the dev CLI (PR-C):
+secureclaw dev corpus anonymize <src-dir> <scratch-dst>
+```
+
+This orchestrates:
+- Structural substitution (paths, emails, phones, IPs, MACs, API-key
+  prefixes, PEM blocks).
+- Three independent scanner passes (SecureClaw self-scan, gitleaks,
+  trufflehog) — file is refused if any pass finds a credential.
+- Post-substitution residue checks (entropy gate + shape check).
+
+Required scanner versions (installed by `tools/install-anonymizer-deps.sh`):
+
+| Scanner | Minimum version |
+|---|---|
+| gitleaks | `v8.18.0` |
+| trufflehog | `v3.63.0` |
+
+### Step 2 — add the (already-clean) fixture
+
+```bash
 secureclaw dev corpus add \
     --class positive \
     --source-attestation "EchoLeak CVE-2025-32711 — published payload" \
     --license "MIT (own work)" \
+    --pattern-id PI-005 \
     path/to/your/fixture.md
 ```
 
-This will:
-1. Anonymize sensitive content (paths, credentials, identifiers).
-2. Generate a draft `expected.json` by running the engine against the
-   anonymized fixture and asking you to label findings as expected /
-   forbidden.
-3. Run the anonymization audit (D.4):
-   - SecureClaw self-scan
-   - gitleaks + trufflehog
-   - Entropy gate on token-shaped substrings
-   - Email/phone/name shape check
-4. Write the fixture + `expected.json` into the appropriate class directory.
+For regression fixtures, use `--regression-of` to record the
+issue/PR/timestamp the regression locks in:
+
+```bash
+secureclaw dev corpus add --class regression \
+    --regression-of "#42" --regression-group lauren \
+    --source-attestation "Lauren-FP-em-dash" \
+    --license "MIT (own work)" \
+    path/to/fixture.md
+```
+
+The adder writes `<basename>.expected.json` with `added_in_pr: "#TBD-C"`,
+which is later replaced via `secureclaw dev corpus set-pr-number <N>`
+once the PR number is known.
 
 ## Two-person review
 

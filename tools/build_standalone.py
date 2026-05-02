@@ -37,6 +37,13 @@ SECTIONS = [
     ("HTML Reporter", SRC / "reporters" / "html_report.py"),
     ("JSON Reporter", SRC / "reporters" / "json_report.py"),
     ("GUI Server", SRC / "gui.py"),
+    ("Dev Corpus Models", SRC / "dev" / "corpus" / "models.py"),
+    ("Dev Corpus Schema", SRC / "dev" / "corpus" / "schema.py"),
+    ("Dev Corpus Loader", SRC / "dev" / "corpus" / "loader.py"),
+    ("Dev Corpus Validator", SRC / "dev" / "corpus" / "validator.py"),
+    ("Dev Corpus Adder", SRC / "dev" / "corpus" / "adder.py"),
+    ("Dev Corpus Anonymizer", SRC / "dev" / "corpus" / "anonymizer.py"),
+    ("Dev Corpus CLI", SRC / "dev" / "corpus" / "cli.py"),
     ("Dev CLI Subcommands", SRC / "dev" / "cli.py"),
     ("CLI", SRC / "cli.py"),
 ]

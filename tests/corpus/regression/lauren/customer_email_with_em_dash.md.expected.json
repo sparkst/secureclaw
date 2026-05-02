@@ -1,0 +1,15 @@
+{
+  "schema_version": 2,
+  "file": "customer_email_with_em_dash.md",
+  "mode": "exact",
+  "expected_findings": [],
+  "forbidden_findings": [
+    "PI-001", "PI-002", "PI-003", "PI-005", "PI-013", "PI-014"
+  ],
+  "source": "own work — synthetic Lauren-persona email; em-dash regression guard",
+  "license": "MIT (own work)",
+  "category": "regression_lauren_em_dash",
+  "added_in_pr": "#23",
+  "regression_of": "Lauren-FP-em-dash (synthetic, PR-C seed)",
+  "anonymization": {"applied": false}
+}

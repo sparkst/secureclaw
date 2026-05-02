@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "file": "hidden_html_aria.html",
+  "mode": "superset",
+  "expected_findings": [
+    {"pattern_id": "PI-013", "line": 5, "confidence_range": [25, 100]}
+  ],
+  "forbidden_findings": [],
+  "source": "own work — hidden ARIA invisibility attack",
+  "license": "MIT (own work)",
+  "category": "hidden_html",
+  "added_in_pr": "#23",
+  "anonymization": {"applied": false}
+}

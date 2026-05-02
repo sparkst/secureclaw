@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "file": "marketing_email_with_links.md",
+  "mode": "exact",
+  "expected_findings": [],
+  "forbidden_findings": [
+    "PI-001", "PI-002", "PI-003", "PI-005", "PI-013"
+  ],
+  "source": "own work — benign marketing prose",
+  "license": "MIT (own work)",
+  "category": "marketing_prose",
+  "added_in_pr": "#23",
+  "anonymization": {"applied": false}
+}

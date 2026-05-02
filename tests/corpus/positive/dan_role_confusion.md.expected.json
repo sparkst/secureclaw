@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "file": "dan_role_confusion.md",
+  "mode": "superset",
+  "expected_findings": [
+    {"pattern_id": "PI-002", "line": 1, "confidence_range": [25, 100]}
+  ],
+  "forbidden_findings": [],
+  "source": "own work — canonical DAN role-confusion sample",
+  "license": "MIT (own work)",
+  "category": "role_confusion",
+  "added_in_pr": "#23",
+  "anonymization": {"applied": false}
+}

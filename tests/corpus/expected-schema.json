@@ -50,6 +50,10 @@
     },
     "category": { "type": "string" },
     "added_in_pr": { "type": "string" },
+    "upstream_url": { "type": "string", "format": "uri" },
+    "upstream_commit": { "type": "string", "pattern": "^[a-f0-9]{7,40}$" },
+    "derived_from": { "type": "string" },
+    "regression_of": { "type": "string" },
     "anonymization": {
       "type": "object",
       "additionalProperties": false,

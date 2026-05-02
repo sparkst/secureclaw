@@ -19,9 +19,13 @@ def test_dev_subcommand_present_in_top_parser() -> None:
     assert "dev" in choices, "expected 'dev' subcommand in top-level parser"
 
 
-def test_dev_corpus_returns_zero_on_stub(monkeypatch) -> None:
+def test_dev_corpus_returns_zero_on_stub(monkeypatch, tmp_path) -> None:
+    """PR-C replaces the corpus stub with a real implementation.
+
+    `dev corpus list` against an empty root exits 0.
+    """
     parser = build_parser()
-    args = parser.parse_args(["dev", "corpus", "list"])
+    args = parser.parse_args(["dev", "corpus", "list", "--root", str(tmp_path)])
     rc = cmd_dev(args)
     assert rc == 0
 
@@ -48,8 +52,13 @@ def test_dev_no_subcommand_returns_two() -> None:
 
 
 def test_dev_message_mentions_scaffolding(capsys) -> None:
+    """Stubbed verbs (rule/bench/fed/sync/triage) still print a scaffolding hint.
+
+    PR-C replaced corpus with a real implementation, so this test now uses
+    `rule` (still stubbed) to verify the scaffolding message.
+    """
     parser = build_parser()
-    args = parser.parse_args(["dev", "corpus", "list"])
+    args = parser.parse_args(["dev", "rule", "validate"])
     cmd_dev(args)
     captured = capsys.readouterr()
     assert "scaffolding" in captured.err.lower()
