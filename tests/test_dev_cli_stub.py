@@ -52,13 +52,14 @@ def test_dev_no_subcommand_returns_two() -> None:
 
 
 def test_dev_message_mentions_scaffolding(capsys) -> None:
-    """Stubbed verbs (rule/bench/fed/sync/triage) still print a scaffolding hint.
+    """Stubbed verbs (bench/fed/sync/triage) still print a scaffolding hint.
 
-    PR-C replaced corpus with a real implementation, so this test now uses
-    `rule` (still stubbed) to verify the scaffolding message.
+    PR-C replaced corpus with a real implementation; PR-D replaced rule with
+    a real implementation. This test now uses `bench` (still stubbed) to
+    verify the scaffolding message.
     """
     parser = build_parser()
-    args = parser.parse_args(["dev", "rule", "validate"])
+    args = parser.parse_args(["dev", "bench", "run"])
     cmd_dev(args)
     captured = capsys.readouterr()
     assert "scaffolding" in captured.err.lower()

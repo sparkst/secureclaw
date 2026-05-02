@@ -33,12 +33,10 @@ def add_dev_parser(subparsers: argparse._SubParsersAction) -> argparse.ArgumentP
     attach_corpus(corpus_parser)
 
     rule_parser = dev_sub.add_parser("rule", help="Author and validate detection rules")
-    rule_parser.add_argument(
-        "verb",
-        nargs="?",
-        choices=["new", "test", "validate"],
-        help="Operation to perform",
-    )
+    # Local import keeps `secureclaw.dev.cli` lightweight when other verbs run.
+    from secureclaw.dev.rule.cli import attach_rule
+
+    attach_rule(rule_parser)
 
     bench_parser = dev_sub.add_parser("bench", help="Run the benchmark suite")
     bench_parser.add_argument(
@@ -83,6 +81,11 @@ def cmd_dev(args: argparse.Namespace) -> int:
         from secureclaw.dev.corpus.cli import dispatch_corpus
 
         return dispatch_corpus(args)
+
+    if sub == "rule":
+        from secureclaw.dev.rule.cli import dispatch_rule
+
+        return dispatch_rule(args)
 
     print(
         f"secureclaw dev {sub}: scaffolding only in v1.3.0 Foundation. "
