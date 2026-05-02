@@ -44,6 +44,12 @@ SECTIONS = [
     ("Dev Corpus Adder", SRC / "dev" / "corpus" / "adder.py"),
     ("Dev Corpus Anonymizer", SRC / "dev" / "corpus" / "anonymizer.py"),
     ("Dev Corpus CLI", SRC / "dev" / "corpus" / "cli.py"),
+    ("Dev Rule Models", SRC / "dev" / "rule" / "models.py"),
+    ("Dev Rule Schema", SRC / "dev" / "rule" / "schema.py"),
+    ("Dev Rule Scaffolder", SRC / "dev" / "rule" / "scaffolder.py"),
+    ("Dev Rule Runner", SRC / "dev" / "rule" / "runner.py"),
+    ("Dev Rule Validator", SRC / "dev" / "rule" / "validator.py"),
+    ("Dev Rule CLI", SRC / "dev" / "rule" / "cli.py"),
     ("Dev CLI Subcommands", SRC / "dev" / "cli.py"),
     ("CLI", SRC / "cli.py"),
 ]
