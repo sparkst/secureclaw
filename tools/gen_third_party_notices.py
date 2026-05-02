@@ -105,6 +105,8 @@ DEP_LICENSE_TABLE = {
     "ruff": ("MIT", "Lint + format (dev only)"),
     "PyYAML": ("MIT", "YAML parsing (dev only — workflow tests)"),
     "packaging": ("Apache-2.0 OR BSD-2-Clause", "Semver parsing for REQ-15 (dev only)"),
+    "jsonschema": ("MIT", "Validate corpus expected.json against schema (dev only)"),
+    "hypothesis": ("MPL-2.0", "Property-based PEM line-count tests (dev only)"),
 }
 
 

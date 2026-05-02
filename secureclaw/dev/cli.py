@@ -1,8 +1,9 @@
 """Argparse subparsers and dispatch for `secureclaw dev`.
 
-This is the Foundation skeleton. Each verb (`corpus`, `rule`, `bench`, etc.)
-prints a "not yet implemented" message in this PR; full implementations land
-in PR-C, PR-D, PR-E.
+Spec §10. The `corpus` block uses sub-subparsers (one per verb) so each
+verb can carry its own flags. Other verbs (`rule`, `bench`, `fed`, `sync`,
+`triage`) keep their stub structure — those PRs will perform the same
+restructure.
 """
 
 from __future__ import annotations
@@ -24,13 +25,12 @@ def add_dev_parser(subparsers: argparse._SubParsersAction) -> argparse.ArgumentP
     )
     dev_sub = dev_parser.add_subparsers(dest="dev_command")
 
+    # corpus — sub-subparsers per spec §10 / PR-C.
     corpus_parser = dev_sub.add_parser("corpus", help="Manage tests/corpus/ fixtures")
-    corpus_parser.add_argument(
-        "verb",
-        nargs="?",
-        choices=["add", "list", "validate", "anonymize"],
-        help="Operation to perform",
-    )
+    # Local import keeps `secureclaw.dev.cli` lightweight when other verbs run.
+    from secureclaw.dev.corpus.cli import attach as attach_corpus
+
+    attach_corpus(corpus_parser)
 
     rule_parser = dev_sub.add_parser("rule", help="Author and validate detection rules")
     rule_parser.add_argument(
@@ -70,7 +70,7 @@ def add_dev_parser(subparsers: argparse._SubParsersAction) -> argparse.ArgumentP
 
 
 def cmd_dev(args: argparse.Namespace) -> int:
-    """Dispatch `secureclaw dev <subcommand>`. All Foundation stubs."""
+    """Dispatch `secureclaw dev <subcommand>`."""
     sub = getattr(args, "dev_command", None)
     if sub is None:
         print(
@@ -78,6 +78,11 @@ def cmd_dev(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 2
+
+    if sub == "corpus":
+        from secureclaw.dev.corpus.cli import dispatch as corpus_dispatch
+
+        return corpus_dispatch(args)
 
     print(
         f"secureclaw dev {sub}: scaffolding only in v1.3.0 Foundation. "
