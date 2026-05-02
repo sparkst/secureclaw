@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from secureclaw import __version__ as _secureclaw_version
+from secureclaw import __version__
 from secureclaw.core.confidence import score_findings
 from secureclaw.core.patterns import PatternEngine, load_patterns_from_json
 from secureclaw.core.scanner import scan_file
@@ -78,7 +78,7 @@ def _rule_set_version(rules_file: Path) -> str:
             return data["version"]
     except (OSError, json.JSONDecodeError):
         pass
-    return _secureclaw_version
+    return __version__
 
 
 def _load_benchmark_fixtures(corpus_root: Path, subdir: str) -> List[Fixture]:
@@ -322,7 +322,7 @@ def run_bench(
     return BenchResult(
         schema_version=SCHEMA_VERSION,
         suite=suite.name,
-        secureclaw_version=_secureclaw_version,
+        secureclaw_version=__version__,
         rule_set_version=rule_version,
         rule_set_sha256=rule_sha,
         fixtures=rows,
