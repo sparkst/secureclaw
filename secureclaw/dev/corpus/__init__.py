@@ -6,6 +6,7 @@ Public surface (cross-PR contract for PR-D and PR-E per spec §4.1).
 from __future__ import annotations
 
 from secureclaw.dev.corpus.adder import add_fixture, set_pr_number
+from secureclaw.dev.corpus.anonymizer import anonymize_tree
 from secureclaw.dev.corpus.loader import iter_fixtures, load_fixtures
 from secureclaw.dev.corpus.models import (
     AnonymizeReport,
@@ -25,6 +26,7 @@ __all__ = [
     "RefusalReason",
     "ValidationError",
     "add_fixture",
+    "anonymize_tree",
     "iter_fixtures",
     "load_fixtures",
     "set_pr_number",

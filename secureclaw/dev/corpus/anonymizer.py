@@ -12,19 +12,22 @@ land in S5b/S5c.
 
 from __future__ import annotations
 
+import fnmatch
 import hashlib
 import json
 import math
+import os
 import re
 import shutil
 import subprocess
 import tempfile
 from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 # Single source of truth for credential prefixes (spec constraint #4).
 from secureclaw.core.credentials import REAL_TOKEN_PREFIXES  # noqa: F401
+from secureclaw.dev.corpus.models import AnonymizeReport
 
 
 # --- helpers ---------------------------------------------------------------
@@ -478,3 +481,336 @@ def _run_secureclaw_self_scan(target: Path) -> Tuple[str, Dict[str, Any]]:
     if triggered:
         return "refuse", {"findings": triggered}
     return "pass", {}
+
+
+# --- tree walker (S5c) ----------------------------------------------------
+
+# Default include globs (spec §7.5).
+_DEFAULT_INCLUDE_GLOBS = (
+    "*.md",
+    "*.txt",
+    "*.py",
+    "*.js",
+    "*.ts",
+    "*.json",
+    "*.yaml",
+    "*.yml",
+    "*.toml",
+    "*.html",
+    "*.css",
+    "*.cursorrules",
+    "*.windsurfrules",
+    ".env*",
+)
+
+# Default exclusion globs (spec §7.5).
+_EXCLUSION_GLOBS = ("*.expected.json",)
+_EXCLUSION_DIR_NAMES = (".git", ".venv", "node_modules", "__pycache__")
+
+_DEFAULT_MAX_BYTES = 1 * 1024 * 1024  # 1 MiB
+
+
+def _is_binary(path: Path) -> bool:
+    """NUL byte in first 8KB → binary."""
+    try:
+        with path.open("rb") as fh:
+            chunk = fh.read(8192)
+    except OSError:
+        return False
+    return b"\x00" in chunk
+
+
+def _matches_any_glob(name: str, globs: Iterable[str]) -> bool:
+    return any(fnmatch.fnmatch(name, g) for g in globs)
+
+
+def _validate_dst(src: Path, dst: Path) -> None:
+    """Spec §6.4 — dst must not exist, must not be inside src or tests/corpus/."""
+    src_resolved = src.resolve(strict=False)
+    dst_resolved = dst.resolve(strict=False)
+    if dst.exists():
+        raise ValueError(f"<dst-dir> '{dst}' must not exist; the verb creates it")
+    # dst inside src → forbidden.
+    try:
+        dst_resolved.relative_to(src_resolved)
+    except ValueError:
+        pass
+    else:
+        raise ValueError(f"<dst-dir> '{dst}' must not be inside <src-dir>")
+    # dst inside tests/corpus/ → forbidden.
+    parts = dst_resolved.parts
+    for i, part in enumerate(parts):
+        if part == "corpus" and i > 0 and parts[i - 1] == "tests":
+            raise ValueError(f"<dst-dir> '{dst}' must not be inside tests/corpus/")
+
+
+def _record(report_lines: List[str], entry: Dict[str, Any]) -> None:
+    report_lines.append(json.dumps(entry, sort_keys=True))
+
+
+def anonymize_tree(
+    src: Path,
+    dst: Path,
+    *,
+    max_bytes: int = _DEFAULT_MAX_BYTES,
+    include: Optional[Iterable[str]] = None,
+    no_gitleaks: bool = False,
+    no_trufflehog: bool = False,
+    scanner_timeout: int = 30,
+    allow_trufflehog_unverified: bool = False,
+) -> AnonymizeReport:
+    """Walk ``src`` and produce anonymized copies in ``dst`` (spec §6.4 / §7).
+
+    Returns an :class:`AnonymizeReport`. Mocked subprocess calls in tests
+    cover the scanner-orchestration paths; the tree-walk and skip rules are
+    exercised directly.
+    """
+    src = Path(src)
+    dst = Path(dst)
+    include_globs = tuple(include) if include else _DEFAULT_INCLUDE_GLOBS
+
+    _validate_dst(src, dst)
+
+    report = AnonymizeReport(src_root=src, dst_root=dst)
+    report_lines: List[str] = []
+
+    dst.mkdir(parents=True, exist_ok=False)
+
+    # Cycle detection via (st_dev, st_ino) and resolved-path fallback.
+    visited: set = set()
+    visited_paths: set = set()
+
+    for dirpath, dirnames, filenames in os.walk(src, followlinks=False, topdown=True):
+        # Cycle protection.
+        try:
+            st = os.stat(dirpath)  # noqa: PTH116 — need st_dev/st_ino for cycle detection
+            key = (st.st_dev, st.st_ino)
+            if key in visited:
+                continue
+            if st.st_ino == 0:
+                # FAT/exFAT fallback — use resolved path.
+                rp = str(Path(dirpath).resolve(strict=False))
+                if rp in visited_paths:
+                    continue
+                visited_paths.add(rp)
+            else:
+                visited.add(key)
+        except OSError:
+            pass
+
+        # Prune known-irrelevant dirs.
+        dirnames[:] = [d for d in dirnames if d not in _EXCLUSION_DIR_NAMES]
+
+        for fname in filenames:
+            full = Path(dirpath) / fname
+            rel = full.relative_to(src)
+            entry: Dict[str, Any] = {"src": str(full), "rel": str(rel)}
+
+            # Skip: symlink.
+            try:
+                if full.is_symlink():
+                    report.skipped += 1
+                    entry.update({"skipped": True, "reason": "symlink"})
+                    _record(report_lines, entry)
+                    continue
+            except OSError:
+                pass
+
+            # Skip: hardlink (st_nlink > 1).
+            try:
+                file_stat = full.stat()
+                if file_stat.st_nlink > 1:
+                    report.skipped += 1
+                    entry.update({"skipped": True, "reason": "hardlink"})
+                    _record(report_lines, entry)
+                    continue
+            except OSError as exc:
+                report.errors += 1
+                entry.update({"refused": True, "reason": f"OSError: {exc}"})
+                _record(report_lines, entry)
+                continue
+
+            # Skip: oversized.
+            if file_stat.st_size > max_bytes:
+                report.skipped += 1
+                entry.update({"skipped": True, "reason": "too-large"})
+                _record(report_lines, entry)
+                continue
+
+            # Skip: exclusion glob.
+            if _matches_any_glob(fname, _EXCLUSION_GLOBS):
+                report.skipped += 1
+                entry.update({"skipped": True, "reason": "excluded-glob"})
+                _record(report_lines, entry)
+                continue
+
+            # Skip: not in include globs.
+            if not _matches_any_glob(fname, include_globs):
+                report.skipped += 1
+                entry.update({"skipped": True, "reason": "not-included"})
+                _record(report_lines, entry)
+                continue
+
+            # Skip: binary content.
+            if _is_binary(full):
+                report.skipped += 1
+                entry.update({"skipped": True, "reason": "binary"})
+                _record(report_lines, entry)
+                continue
+
+            # Read.
+            try:
+                content = full.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                report.errors += 1
+                entry.update({"refused": True, "reason": "UnicodeDecodeError"})
+                _record(report_lines, entry)
+                continue
+            except OSError as exc:
+                report.errors += 1
+                entry.update({"refused": True, "reason": f"OSError: {exc}"})
+                _record(report_lines, entry)
+                continue
+
+            # Substitute.
+            substituted, replacement_counts = _substitute(content)
+
+            # Write to a tempfile in the target subdir, then scan, then atomic-rename.
+            dst_subdir = dst / rel.parent
+            dst_subdir.mkdir(parents=True, exist_ok=True)
+
+            tmp_handle = tempfile.NamedTemporaryFile(
+                dir=str(dst_subdir),
+                delete=False,
+                suffix=".sc-anon-tmp",
+                mode="w",
+                encoding="utf-8",
+                newline="",
+            )
+            tmp_path_str = tmp_handle.name
+            try:
+                tmp_handle.write(substituted)
+                tmp_handle.flush()
+            finally:
+                tmp_handle.close()
+            tmp_path = Path(tmp_path_str)
+
+            # Scanner orchestration.
+            scanners_info: Dict[str, Any] = {}
+            try:
+                # SecureClaw self-scan.
+                v_self, info_self = _run_secureclaw_self_scan(tmp_path)
+                scanners_info["secureclaw"] = v_self
+                if v_self == "refuse":
+                    raise _Refusal("secureclaw", info_self)
+                if v_self == "abort":
+                    raise _Abort("secureclaw", info_self)
+
+                # gitleaks.
+                v_g, info_g = _run_gitleaks(
+                    tmp_path,
+                    dst_subdir=dst_subdir,
+                    timeout=scanner_timeout,
+                    enabled=not no_gitleaks,
+                )
+                scanners_info["gitleaks"] = v_g
+                if v_g == "refuse":
+                    raise _Refusal("gitleaks", info_g)
+                if v_g == "abort":
+                    raise _Abort("gitleaks", info_g)
+
+                # trufflehog.
+                v_t, info_t = _run_trufflehog(
+                    tmp_path,
+                    timeout=scanner_timeout,
+                    allow_unverified=allow_trufflehog_unverified,
+                    enabled=not no_trufflehog,
+                )
+                scanners_info["trufflehog"] = v_t
+                if v_t == "refuse":
+                    raise _Refusal("trufflehog", info_t)
+                if v_t == "abort":
+                    raise _Abort("trufflehog", info_t)
+
+                # Residue check.
+                residue = _residue_check(substituted)
+                if residue is not None:
+                    raise _Refusal(residue, {"reason": "post-substitution residue"})
+
+            except _Refusal as ref:
+                tmp_path.unlink(missing_ok=True)
+                report.refused += 1
+                entry.update(
+                    {
+                        "refused": True,
+                        "reason": ref.reason,
+                        "details": ref.info,
+                        "scanners": scanners_info,
+                    }
+                )
+                _record(report_lines, entry)
+                continue
+            except _Abort as ab:
+                tmp_path.unlink(missing_ok=True)
+                report.aborted = True
+                entry.update(
+                    {
+                        "refused": True,
+                        "aborted": True,
+                        "reason": f"{ab.scanner} abort: {ab.info.get('reason', '')}",
+                    }
+                )
+                _record(report_lines, entry)
+                # Stop processing further files on a run-abort.
+                break
+
+            # All checks passed — atomic rename to final destination.
+            final_path = dst / rel
+            try:
+                os.replace(str(tmp_path), str(final_path))  # noqa: PTH105 — atomic rename per spec §7.1
+            except OSError as exc:
+                tmp_path.unlink(missing_ok=True)
+                report.errors += 1
+                entry.update({"refused": True, "reason": f"rename-failed: {exc}"})
+                _record(report_lines, entry)
+                continue
+
+            report.processed += 1
+            entry.update(
+                {
+                    "dst": str(final_path),
+                    "bytes": len(substituted.encode("utf-8")),
+                    "replacements": replacement_counts,
+                    "scanners": scanners_info,
+                    "refused": False,
+                }
+            )
+            _record(report_lines, entry)
+
+        if report.aborted:
+            break
+
+    # Write the JSONL report (always, even if empty).
+    report_path = dst / "anonymize-report.jsonl"
+    with report_path.open("w", encoding="utf-8", newline="") as fh:
+        for line in report_lines:
+            fh.write(line + "\n")
+        fh.flush()
+        os.fsync(fh.fileno())
+
+    return report
+
+
+# --- internal control-flow helpers ----------------------------------------
+
+
+class _Refusal(Exception):
+    def __init__(self, reason: str, info: Dict[str, Any]) -> None:
+        self.reason = reason
+        self.info = info
+
+
+class _Abort(Exception):
+    def __init__(self, scanner: str, info: Dict[str, Any]) -> None:
+        self.scanner = scanner
+        self.info = info
