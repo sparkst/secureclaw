@@ -147,10 +147,15 @@ def _cmd_new(args: argparse.Namespace) -> int:
 def _print_result_text(result) -> None:  # type: ignore[no-untyped-def]
     pos_pass = sum(1 for p in result.positives if p[1])
     neg_pass = sum(1 for n in result.negatives if n[1])
-    status = "PASS" if result.passed else "FAIL"
+    n_pos = len(result.positives)
+    n_neg = len(result.negatives)
+    if n_pos == 0 and n_neg == 0:
+        status = "NO FIXTURES"  # vacuously true; flag for visibility
+    else:
+        status = "PASS" if result.passed else "FAIL"
     print(
-        f"RULE {result.rule_id}: {pos_pass}/{len(result.positives)} positive, "
-        f"{neg_pass}/{len(result.negatives)} negative -- {status}"
+        f"RULE {result.rule_id}: {pos_pass}/{n_pos} positive, "
+        f"{neg_pass}/{n_neg} negative -- {status}"
     )
     if not result.passed:
         for path, ok, diag in result.positives:

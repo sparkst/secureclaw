@@ -52,8 +52,11 @@ _RE_IPV4 = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 # MAC address (lower or upper case).
 _RE_MAC = re.compile(r"\b[0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5}\b")
 
-# NANP phone (US/CA): optional +1, optional separators.
-_RE_PHONE_NANP = re.compile(r"\+?1?[-. ]?\(?\d{3}\)?[-. ]?\d{3}[-. ]?\d{4}")
+# NANP phone (US/CA): optional +1, optional separators. The leading
+# separator is grouped with the country-code prefix so a bare 10-digit
+# number does NOT consume a preceding space (preserves "Phone: (555)
+# 123-4567" structure across substitution).
+_RE_PHONE_NANP = re.compile(r"(?:\+?1[-. ]?)?\(?\d{3}\)?[-. ]?\d{3}[-. ]?\d{4}")
 
 # Email — captures local + domain.
 _RE_EMAIL = re.compile(r"(?P<local>[A-Za-z0-9._%+-]+)@(?P<domain>[A-Za-z0-9.-]+\.[A-Za-z]{2,})")
@@ -260,7 +263,7 @@ def _shannon_entropy(token: str) -> float:
 # Shape patterns for residue check.
 _RE_RESIDUE_EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b")
 _RE_RESIDUE_HOST_INTERNAL = re.compile(r"\b[A-Za-z0-9.-]+\.(?:internal|local)\b")
-_RE_RESIDUE_PHONE = re.compile(r"\+?1?[-. ]?\(?\d{3}\)?[-. ]?\d{3}[-. ]?\d{4}")
+_RE_RESIDUE_PHONE = re.compile(r"(?:\+?1[-. ]?)?\(?\d{3}\)?[-. ]?\d{3}[-. ]?\d{4}")
 _RE_RESIDUE_SSN = re.compile(r"\b\d{3}-\d{2}-\d{4}\b")
 _RE_RESIDUE_IBAN = re.compile(r"\b[A-Z]{2}\d{2}[A-Z0-9]{4}\d{7,26}\b")
 

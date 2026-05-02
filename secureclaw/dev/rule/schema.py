@@ -102,10 +102,13 @@ def _license_blocked(license_str: str) -> bool:
 
 
 def _validate_sources(sources: List[Any], *, strict_attribution: bool) -> List[str]:
-    """Validate the ``sources`` array. Returns error strings."""
+    """Validate the ``sources`` array. Returns error strings.
+
+    The empty-list check is handled by the caller (step 6 in validate_rule's
+    _NON_EMPTY_LISTS sweep). Skipping it here avoids duplicate warnings.
+    """
     errors: List[str] = []
     if not sources:
-        errors.append("sources must be a non-empty list")
         return errors
 
     for idx, src in enumerate(sources):
