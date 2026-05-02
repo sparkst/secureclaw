@@ -180,15 +180,19 @@ class Fixture:
         return out
 
     def klass(self) -> str:
-        """Derive class from the fixture's containing directory."""
-        # path = .../tests/corpus/<klass>/<file>.expected.json or
-        #        .../tests/corpus/regression/<group>/<file>.expected.json
-        parts = self.path.parts
-        # Walk back to find the segment after "corpus".
-        for i, part in enumerate(parts):
-            if part == "corpus" and i + 1 < len(parts):
-                return parts[i + 1]
-        raise ValueError(f"fixture path {self.path} is not under a tests/corpus/ tree")
+        """Derive class from the fixture's containing directory.
+
+        Walks the path parts and returns the first segment matching one of the
+        five valid class names. This works whether the path is rooted under
+        ``tests/corpus/`` (production) or under a temporary test root (unit
+        tests), and tolerates regression subgroups
+        (``regression/<group>/<file>.expected.json``).
+        """
+        valid_classes = {"positive", "negative", "borderline", "regression", "dos"}
+        for part in self.path.parts:
+            if part in valid_classes:
+                return part
+        raise ValueError(f"fixture path {self.path} is not under one of: {sorted(valid_classes)}")
 
 
 @dataclass(frozen=True)
