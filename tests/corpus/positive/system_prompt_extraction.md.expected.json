@@ -9,6 +9,6 @@
   "source": "own work — canonical PI-003 trigger",
   "license": "MIT (own work)",
   "category": "system_prompt_extraction",
-  "added_in_pr": "#TBD-C",
+  "added_in_pr": "#23",
   "anonymization": {"applied": false}
 }
