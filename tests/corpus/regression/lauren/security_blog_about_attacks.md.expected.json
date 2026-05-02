@@ -1,0 +1,15 @@
+{
+  "schema_version": 2,
+  "file": "security_blog_about_attacks.md",
+  "mode": "exact",
+  "expected_findings": [],
+  "forbidden_findings": [
+    "PI-001", "PI-002", "PI-003", "PI-005", "PI-013"
+  ],
+  "source": "own work — synthetic security-blog regression guard",
+  "license": "MIT (own work)",
+  "category": "regression_lauren_meta_article",
+  "added_in_pr": "#TBD-C",
+  "regression_of": "Lauren-FP-meta-article (synthetic, PR-C seed)",
+  "anonymization": {"applied": false}
+}

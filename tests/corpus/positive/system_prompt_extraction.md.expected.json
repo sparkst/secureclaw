@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "file": "system_prompt_extraction.md",
+  "mode": "superset",
+  "expected_findings": [
+    {"pattern_id": "PI-003", "line": 1, "confidence_range": [25, 100]}
+  ],
+  "forbidden_findings": [],
+  "source": "own work — canonical PI-003 trigger",
+  "license": "MIT (own work)",
+  "category": "system_prompt_extraction",
+  "added_in_pr": "#TBD-C",
+  "anonymization": {"applied": false}
+}

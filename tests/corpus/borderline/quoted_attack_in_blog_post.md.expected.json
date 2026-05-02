@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "file": "quoted_attack_in_blog_post.md",
+  "mode": "subset",
+  "expected_findings": [],
+  "forbidden_findings": [
+    "PI-001", "PI-002", "PI-003", "PI-005", "PI-013"
+  ],
+  "source": "own work — borderline article about prompt injection",
+  "license": "MIT (own work)",
+  "category": "meta_discussion",
+  "added_in_pr": "#TBD-C",
+  "anonymization": {"applied": false}
+}

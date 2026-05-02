@@ -1,0 +1,12 @@
+{
+  "schema_version": 2,
+  "file": "deeply_nested_markdown.md",
+  "mode": "subset",
+  "expected_findings": [],
+  "forbidden_findings": [],
+  "source": "own work — synthetic deeply-nested markdown for parser DoS shape",
+  "license": "MIT (own work)",
+  "category": "parser_dos",
+  "added_in_pr": "#TBD-C",
+  "anonymization": {"applied": false}
+}
