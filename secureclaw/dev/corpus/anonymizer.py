@@ -13,10 +13,15 @@ land in S5b/S5c.
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 import re
+import shutil
+import subprocess
+import tempfile
 from collections import Counter
-from typing import Dict, Optional, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 # Single source of truth for credential prefixes (spec constraint #4).
 from secureclaw.core.credentials import REAL_TOKEN_PREFIXES  # noqa: F401
@@ -298,3 +303,178 @@ def _residue_check(text: str) -> Optional[str]:
             return "entropy_gate"
 
     return None
+
+
+# --- scanner orchestrator (S5b) -------------------------------------------
+
+# Verdict literal: "pass" | "refuse" | "abort".
+# - pass: scanner ran and found nothing (or was disabled).
+# - refuse: scanner ran and reported a finding — file should be refused.
+# - abort: scanner could not run cleanly (missing binary, unexpected exit) —
+#   the entire run should abort with non-zero exit and an actionable message.
+
+_GITLEAKS_VERSION_HINT = "tools/install-anonymizer-deps.sh installs gitleaks >= v8.18.0"
+_TRUFFLEHOG_VERSION_HINT = "tools/install-anonymizer-deps.sh installs trufflehog >= v3.63.0"
+
+
+def _run_gitleaks(
+    target: Path,
+    *,
+    dst_subdir: Path,
+    timeout: int,
+    enabled: bool = True,
+) -> Tuple[str, Dict[str, Any]]:
+    """Spec §7.3b. Returns (verdict, info).
+
+    Per-file isolated scan dir prevents O(N²) and prior-output contamination.
+    """
+    if not enabled:
+        return "pass", {"skipped": "disabled"}
+
+    binary = shutil.which("gitleaks")
+    if binary is None:
+        return "abort", {
+            "reason": (f"gitleaks not installed; {_GITLEAKS_VERSION_HINT} or pass --no-gitleaks")
+        }
+
+    # Per-file isolated scan directory — avoids gitleaks v8 scanning prior
+    # output files in dst_subdir (would cause O(N²) scaling and false refusals).
+    scan_dir = Path(tempfile.mkdtemp(dir=dst_subdir, prefix=".sc-anon-scan-"))
+    try:
+        scan_target = scan_dir / target.name
+        shutil.copy2(target, scan_target)
+        try:
+            result = subprocess.run(
+                [
+                    binary,
+                    "detect",
+                    "--source",
+                    str(scan_dir),
+                    "--no-git",
+                    "--report-format",
+                    "json",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            return "abort", {"reason": f"gitleaks timed out after {timeout}s"}
+
+        if result.returncode == 0:
+            return "pass", {}
+        if result.returncode == 1 and result.stdout:
+            try:
+                findings = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                findings = None
+            return "refuse", {"findings": findings, "stdout": result.stdout[:500]}
+        stderr_excerpt = (result.stderr or "")[:200]
+        return "abort", {
+            "reason": (f"gitleaks exited unexpectedly (code {result.returncode}): {stderr_excerpt}")
+        }
+    finally:
+        shutil.rmtree(scan_dir, ignore_errors=True)
+
+
+def _run_trufflehog(
+    target: Path,
+    *,
+    timeout: int,
+    allow_unverified: bool,
+    enabled: bool = True,
+) -> Tuple[str, Dict[str, Any]]:
+    """Spec §7.3c. JSONL stdout is the primary detection signal."""
+    if not enabled:
+        return "pass", {"skipped": "disabled"}
+
+    binary = shutil.which("trufflehog")
+    if binary is None:
+        return "abort", {
+            "reason": (
+                f"trufflehog not installed; {_TRUFFLEHOG_VERSION_HINT} or pass --no-trufflehog"
+            )
+        }
+
+    try:
+        result = subprocess.run(
+            [binary, "filesystem", "--json", str(target)],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return "abort", {"reason": f"trufflehog timed out after {timeout}s"}
+
+    stdout = (result.stdout or "").strip()
+
+    # Spec §7.3c: stdout JSONL is the primary signal regardless of exit code.
+    if stdout:
+        verified_findings: List[Dict[str, Any]] = []
+        unverified_findings: List[Dict[str, Any]] = []
+        for line in stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if obj.get("Verified"):
+                verified_findings.append(obj)
+            else:
+                unverified_findings.append(obj)
+        if verified_findings:
+            return "refuse", {"findings": verified_findings, "verified": True}
+        if unverified_findings and not allow_unverified:
+            return "refuse", {"findings": unverified_findings, "verified": False}
+        if unverified_findings and allow_unverified:
+            return "pass", {
+                "warnings": unverified_findings,
+                "note": "unverified findings allowed by --allow-trufflehog-unverified",
+            }
+        # Stdout was non-empty but couldn't parse — treat as abort.
+        return "abort", {"reason": f"trufflehog stdout unparseable: {stdout[:200]}"}
+
+    if result.returncode == 0:
+        return "pass", {}
+    return "abort", {
+        "reason": (
+            f"trufflehog exited unexpectedly (code {result.returncode}) "
+            f"with empty stdout: {(result.stderr or '')[:200]}"
+        )
+    }
+
+
+# Credential-class pattern IDs that the SecureClaw self-scan considers
+# refusal-triggering (spec §7.3a). PI-022 KEY=value detection is the
+# primary contribution from SecureClaw's current rule set.
+_SECURECLAW_CREDENTIAL_PATTERNS = ("PI-022",)
+_SECURECLAW_REFUSAL_THRESHOLD = 75
+
+
+def _run_secureclaw_self_scan(target: Path) -> Tuple[str, Dict[str, Any]]:
+    """Spec §7.3a — call secureclaw.core.scanner.scan_file directly."""
+    # Lazy imports keep anonymizer importable even without scanner state.
+    from secureclaw.core.patterns import PatternEngine, load_default_patterns
+    from secureclaw.core.scanner import scan_file
+
+    try:
+        patterns = load_default_patterns()
+        engine = PatternEngine(patterns)
+        result = scan_file(target, engine)
+    except Exception as exc:  # pragma: no cover — defensive
+        return "abort", {"reason": f"secureclaw self-scan errored: {exc}"}
+
+    findings = getattr(result, "findings", []) or []
+    triggered: List[Dict[str, Any]] = []
+    for f in findings:
+        pid = getattr(f, "pattern_id", None) or getattr(f, "rule_id", None)
+        confidence = getattr(f, "confidence", 0)
+        if pid in _SECURECLAW_CREDENTIAL_PATTERNS and confidence >= _SECURECLAW_REFUSAL_THRESHOLD:
+            triggered.append({"pattern_id": pid, "confidence": confidence})
+    if triggered:
+        return "refuse", {"findings": triggered}
+    return "pass", {}
