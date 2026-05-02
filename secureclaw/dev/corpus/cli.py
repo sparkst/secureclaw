@@ -20,7 +20,7 @@ from secureclaw.dev.corpus.validator import validate_corpus
 _VALID_CLASSES = ("positive", "negative", "borderline", "regression", "dos")
 
 
-def attach(corpus_parser: argparse.ArgumentParser) -> None:
+def attach_corpus(corpus_parser: argparse.ArgumentParser) -> None:
     """Attach all corpus sub-subparsers to ``corpus_parser``."""
     sub = corpus_parser.add_subparsers(dest="corpus_verb", required=True)
 
@@ -104,7 +104,7 @@ def attach(corpus_parser: argparse.ArgumentParser) -> None:
     p_set.add_argument("--json", dest="json", action="store_true")
 
 
-def dispatch(args: argparse.Namespace) -> int:
+def dispatch_corpus(args: argparse.Namespace) -> int:
     """Dispatch a parsed namespace to the backing module. Returns exit code."""
     verb = getattr(args, "corpus_verb", None)
     if verb == "add":

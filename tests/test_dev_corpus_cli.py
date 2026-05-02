@@ -57,7 +57,7 @@ def test_dev_corpus_add_help_lists_class_and_source_attestation(capsys) -> None:
 
 def test_dev_corpus_list_runs_against_root(tmp_path: Path, capsys) -> None:
     """`list` walks the root and prints fixtures."""
-    from secureclaw.dev.corpus.cli import dispatch
+    from secureclaw.dev.corpus.cli import dispatch_corpus as dispatch
 
     # Create a single fixture under a tmp root.
     pos = tmp_path / "positive"
@@ -96,7 +96,7 @@ def test_dev_corpus_list_runs_against_root(tmp_path: Path, capsys) -> None:
 
 
 def test_dev_corpus_validate_passes_on_clean_root(tmp_path: Path) -> None:
-    from secureclaw.dev.corpus.cli import dispatch
+    from secureclaw.dev.corpus.cli import dispatch_corpus as dispatch
 
     pos = tmp_path / "positive"
     pos.mkdir()
@@ -127,7 +127,7 @@ def test_dev_corpus_validate_passes_on_clean_root(tmp_path: Path) -> None:
 
 
 def test_dev_corpus_validate_fails_on_bad_license(tmp_path: Path) -> None:
-    from secureclaw.dev.corpus.cli import dispatch
+    from secureclaw.dev.corpus.cli import dispatch_corpus as dispatch
 
     pos = tmp_path / "positive"
     pos.mkdir()
@@ -161,7 +161,7 @@ def test_dev_corpus_validate_fails_on_bad_license(tmp_path: Path) -> None:
 
 
 def test_dev_corpus_set_pr_number_updates_files(tmp_path: Path) -> None:
-    from secureclaw.dev.corpus.cli import dispatch
+    from secureclaw.dev.corpus.cli import dispatch_corpus as dispatch
 
     pos = tmp_path / "positive"
     pos.mkdir()
@@ -196,7 +196,7 @@ def test_dev_corpus_set_pr_number_updates_files(tmp_path: Path) -> None:
 
 
 def test_dev_corpus_set_pr_number_dry_run_does_not_write(tmp_path: Path) -> None:
-    from secureclaw.dev.corpus.cli import dispatch
+    from secureclaw.dev.corpus.cli import dispatch_corpus as dispatch
 
     pos = tmp_path / "positive"
     pos.mkdir()
@@ -231,7 +231,7 @@ def test_dev_corpus_set_pr_number_dry_run_does_not_write(tmp_path: Path) -> None
 
 
 def test_dev_corpus_set_pr_number_json_output(tmp_path: Path, capsys) -> None:
-    from secureclaw.dev.corpus.cli import dispatch
+    from secureclaw.dev.corpus.cli import dispatch_corpus as dispatch
 
     pos = tmp_path / "positive"
     pos.mkdir()
@@ -265,7 +265,7 @@ def test_dev_corpus_set_pr_number_json_output(tmp_path: Path, capsys) -> None:
 
 
 def test_dev_corpus_set_pr_number_skipped_files_listed(tmp_path: Path, capsys) -> None:
-    from secureclaw.dev.corpus.cli import dispatch
+    from secureclaw.dev.corpus.cli import dispatch_corpus as dispatch
 
     pos = tmp_path / "positive"
     pos.mkdir()

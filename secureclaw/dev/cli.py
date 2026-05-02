@@ -28,7 +28,7 @@ def add_dev_parser(subparsers: argparse._SubParsersAction) -> argparse.ArgumentP
     # corpus — sub-subparsers per spec §10 / PR-C.
     corpus_parser = dev_sub.add_parser("corpus", help="Manage tests/corpus/ fixtures")
     # Local import keeps `secureclaw.dev.cli` lightweight when other verbs run.
-    from secureclaw.dev.corpus.cli import attach as attach_corpus
+    from secureclaw.dev.corpus.cli import attach_corpus
 
     attach_corpus(corpus_parser)
 
@@ -80,9 +80,9 @@ def cmd_dev(args: argparse.Namespace) -> int:
         return 2
 
     if sub == "corpus":
-        from secureclaw.dev.corpus.cli import dispatch as corpus_dispatch
+        from secureclaw.dev.corpus.cli import dispatch_corpus
 
-        return corpus_dispatch(args)
+        return dispatch_corpus(args)
 
     print(
         f"secureclaw dev {sub}: scaffolding only in v1.3.0 Foundation. "
