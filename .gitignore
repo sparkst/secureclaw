@@ -14,3 +14,5 @@ build/
 .qralph/
 .qreview/
 .review-artifacts/
+# Working-session notes (live in repo root for convenience, not tracked)
+Sparkry.AI*.md
