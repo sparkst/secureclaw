@@ -14,6 +14,7 @@ from secureclaw.dev.corpus.models import (
     RefusalReason,
     ValidationError,
 )
+from secureclaw.dev.corpus.validator import validate_corpus
 
 __all__ = [
     "AnonymizeReport",
@@ -24,4 +25,5 @@ __all__ = [
     "ValidationError",
     "iter_fixtures",
     "load_fixtures",
+    "validate_corpus",
 ]
