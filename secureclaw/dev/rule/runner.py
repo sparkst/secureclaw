@@ -66,9 +66,7 @@ def _scan_fixture(content_path: Path, engine: PatternEngine) -> Any:
     return scan_file(content_path, engine)
 
 
-def _run_positive(
-    fixture: Any, rule_id: str, engine: PatternEngine
-) -> Tuple[str, bool, str]:
+def _run_positive(fixture: Any, rule_id: str, engine: PatternEngine) -> Tuple[str, bool, str]:
     content_path = fixture.path.parent / fixture.file
     if not content_path.exists():
         return (str(content_path), False, "content file missing")
@@ -83,9 +81,7 @@ def _run_positive(
     )
 
 
-def _run_negative(
-    fixture: Any, rule_id: str, engine: PatternEngine
-) -> Tuple[str, bool, str]:
+def _run_negative(fixture: Any, rule_id: str, engine: PatternEngine) -> Tuple[str, bool, str]:
     content_path = fixture.path.parent / fixture.file
     if not content_path.exists():
         return (str(content_path), False, "content file missing")
@@ -100,10 +96,7 @@ def _run_negative(
         return (
             str(content_path),
             False,
-            (
-                f"rule {rule_id} fired on negative fixture "
-                f"(confidence {bad[0].confidence})"
-            ),
+            (f"rule {rule_id} fired on negative fixture (confidence {bad[0].confidence})"),
         )
     return (str(content_path), True, "")
 
@@ -126,28 +119,18 @@ def test_rule(
 
     # Positive fixtures: the PR-C pattern_id filter matches expected_findings,
     # which is the right shape for positives.
-    positive_fixtures = load_fixtures(
-        corpus_root, klass="positive", pattern_id=rule_id
-    )
+    positive_fixtures = load_fixtures(corpus_root, klass="positive", pattern_id=rule_id)
 
     # Negative fixtures: PR-C's pattern_id filter only matches
     # expected_findings, but our negatives never list the rule there — they
     # list it in forbidden_findings. Load all negatives and post-filter.
     all_negatives = load_fixtures(corpus_root, klass="negative")
-    negative_fixtures = [
-        f for f in all_negatives if rule_id in f.forbidden_findings
-    ]
+    negative_fixtures = [f for f in all_negatives if rule_id in f.forbidden_findings]
 
-    positives = tuple(
-        _run_positive(fix, rule_id, engine) for fix in positive_fixtures
-    )
-    negatives = tuple(
-        _run_negative(fix, rule_id, engine) for fix in negative_fixtures
-    )
+    positives = tuple(_run_positive(fix, rule_id, engine) for fix in positive_fixtures)
+    negatives = tuple(_run_negative(fix, rule_id, engine) for fix in negative_fixtures)
 
-    return RuleTestResult(
-        rule_id=rule_id, positives=positives, negatives=negatives
-    )
+    return RuleTestResult(rule_id=rule_id, positives=positives, negatives=negatives)
 
 
 def test_all_rules(

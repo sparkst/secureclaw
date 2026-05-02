@@ -101,9 +101,7 @@ def _license_blocked(license_str: str) -> bool:
     return any(b in lower for b in _LICENSE_BLOCK_SUBSTRINGS)
 
 
-def _validate_sources(
-    sources: List[Any], *, strict_attribution: bool
-) -> List[str]:
+def _validate_sources(sources: List[Any], *, strict_attribution: bool) -> List[str]:
     """Validate the ``sources`` array. Returns error strings."""
     errors: List[str] = []
     if not sources:
@@ -167,10 +165,7 @@ def validate_rule(
         val = rule[f]
         if not isinstance(val, types):
             type_names = "|".join(t.__name__ for t in types)
-            errors.append(
-                f"field {f!r} must be of type {type_names}, "
-                f"got {type(val).__name__}"
-            )
+            errors.append(f"field {f!r} must be of type {type_names}, got {type(val).__name__}")
 
     # 3. id format.
     rid = rule.get("id")
@@ -180,10 +175,7 @@ def validate_rule(
     # 4. severity is a known value.
     sev = rule.get("severity")
     if isinstance(sev, str) and sev not in _VALID_SEVERITIES:
-        errors.append(
-            f"severity {sev!r} is not one of "
-            f"{list(_VALID_SEVERITIES)}"
-        )
+        errors.append(f"severity {sev!r} is not one of {list(_VALID_SEVERITIES)}")
 
     # 5. regex compiles.
     rgx = rule.get("regex")
@@ -202,8 +194,6 @@ def validate_rule(
     # 7. sources contents.
     sources = rule.get("sources")
     if isinstance(sources, list):
-        errors.extend(
-            _validate_sources(sources, strict_attribution=strict_attribution)
-        )
+        errors.extend(_validate_sources(sources, strict_attribution=strict_attribution))
 
     return errors

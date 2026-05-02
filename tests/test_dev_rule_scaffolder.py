@@ -219,20 +219,14 @@ def test_scaffold_dry_run_does_not_write(tmp_path: Path) -> None:
 
     after = rules.read_text(encoding="utf-8")
     assert before == after, "dry-run must not modify rules file"
-    assert not (corpus / "positive").exists() or not list(
-        (corpus / "positive").glob("*")
-    )
-    assert not (corpus / "negative").exists() or not list(
-        (corpus / "negative").glob("*")
-    )
+    assert not (corpus / "positive").exists() or not list((corpus / "positive").glob("*"))
+    assert not (corpus / "negative").exists() or not list((corpus / "negative").glob("*"))
 
 
 # --- Atomic write ----------------------------------------------------------
 
 
-def test_scaffold_atomic_write_on_validation_failure(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_scaffold_atomic_write_on_validation_failure(tmp_path: Path, monkeypatch) -> None:
     """If schema validation fails AFTER file mutation begins, no partial write."""
     from secureclaw.dev.rule.scaffolder import scaffold_rule
 

@@ -51,9 +51,7 @@ def _validate_one_rule(
     errors: List[RuleValidationError] = []
 
     # 1. Schema-level checks via validate_rule.
-    grandfathered = bool(
-        isinstance(rule, dict) and rule.get("license_chain_audited") is True
-    )
+    grandfathered = bool(isinstance(rule, dict) and rule.get("license_chain_audited") is True)
     # In default mode, grandfathered rules skip strict attribution; new rules
     # always get the strict check.
     enforce_strict = strict_attribution or not grandfathered
@@ -70,13 +68,9 @@ def _validate_one_rule(
             or "sources" in msg.lower()
         )
         if grandfathered and not strict_attribution and is_attribution_or_source:
-            errors.append(
-                RuleValidationError(rule_id=rid, severity="warning", message=msg)
-            )
+            errors.append(RuleValidationError(rule_id=rid, severity="warning", message=msg))
         else:
-            errors.append(
-                RuleValidationError(rule_id=rid, severity="error", message=msg)
-            )
+            errors.append(RuleValidationError(rule_id=rid, severity="error", message=msg))
 
     # 2. Test-pair check (only for non-grandfathered rules).
     if not grandfathered and isinstance(rid, str) and rid != "<unknown>":

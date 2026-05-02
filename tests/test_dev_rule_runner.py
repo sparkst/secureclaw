@@ -76,9 +76,7 @@ def _write_positive(corpus: Path, rule_id: str, name: str) -> Path:
                 "schema_version": 2,
                 "file": f"{name}.md",
                 "mode": "superset",
-                "expected_findings": [
-                    {"pattern_id": rule_id, "confidence_range": [25, 100]}
-                ],
+                "expected_findings": [{"pattern_id": rule_id, "confidence_range": [25, 100]}],
                 "source": "own work",
                 "license": "MIT (own work)",
             }
@@ -156,9 +154,7 @@ def test_positive_pass_when_scanner_fires(tmp_path: Path, monkeypatch) -> None:
     assert result.passed is True
 
 
-def test_positive_fail_when_scanner_does_not_fire(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_positive_fail_when_scanner_does_not_fire(tmp_path: Path, monkeypatch) -> None:
     from secureclaw.dev.rule.runner import test_rule
 
     rules = tmp_path / "rules.json"
@@ -177,9 +173,7 @@ def test_positive_fail_when_scanner_does_not_fire(
 # --- negative fixture pass / fail ------------------------------------------
 
 
-def test_negative_pass_when_rule_does_not_fire(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_negative_pass_when_rule_does_not_fire(tmp_path: Path, monkeypatch) -> None:
     from secureclaw.dev.rule.runner import test_rule
 
     rules = tmp_path / "rules.json"

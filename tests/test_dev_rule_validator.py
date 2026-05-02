@@ -70,9 +70,7 @@ def _write_positive(corpus: Path, rule_id: str, name: str = "canon") -> Path:
                 "schema_version": 2,
                 "file": f"{name}.md",
                 "mode": "superset",
-                "expected_findings": [
-                    {"pattern_id": rule_id, "confidence_range": [25, 100]}
-                ],
+                "expected_findings": [{"pattern_id": rule_id, "confidence_range": [25, 100]}],
                 "source": "own work",
                 "license": "MIT (own work)",
             }
@@ -117,9 +115,7 @@ def test_validator_passes_committed_rules_default_mode() -> None:
         strict_attribution=False,
     )
     real_errors = [e for e in errors if e.severity == "error"]
-    assert real_errors == [], (
-        f"committed rules should pass default validate; got {real_errors!r}"
-    )
+    assert real_errors == [], f"committed rules should pass default validate; got {real_errors!r}"
 
 
 # --- Strict mode flags grandfathered rules ---------------------------------

@@ -65,6 +65,4 @@ class RuleValidationError:
 
     def __post_init__(self) -> None:
         if self.severity not in ("error", "warning"):
-            raise ValueError(
-                f"severity must be 'error' or 'warning', got {self.severity!r}"
-            )
+            raise ValueError(f"severity must be 'error' or 'warning', got {self.severity!r}")

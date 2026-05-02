@@ -60,9 +60,7 @@ def attach_rule(rule_parser: argparse.ArgumentParser) -> None:
         help='Semicolon-separated examples ("ex1;ex2")',
     )
     p_new.add_argument("--rules-file", dest="rules_file", default=_DEFAULT_RULES)
-    p_new.add_argument(
-        "--corpus-root", dest="corpus_root", default=_DEFAULT_CORPUS
-    )
+    p_new.add_argument("--corpus-root", dest="corpus_root", default=_DEFAULT_CORPUS)
     p_new.add_argument("--dry-run", dest="dry_run", action="store_true")
     p_new.add_argument("--json", dest="json", action="store_true")
 
@@ -74,20 +72,14 @@ def attach_rule(rule_parser: argparse.ArgumentParser) -> None:
         help="Rule id or 'all' to run every rule",
     )
     p_test.add_argument("--rules-file", dest="rules_file", default=_DEFAULT_RULES)
-    p_test.add_argument(
-        "--corpus-root", dest="corpus_root", default=_DEFAULT_CORPUS
-    )
+    p_test.add_argument("--corpus-root", dest="corpus_root", default=_DEFAULT_CORPUS)
     p_test.add_argument("--json", dest="json", action="store_true")
 
     # `validate`
     p_val = sub.add_parser("validate", help="Validate every rule in the file")
     p_val.add_argument("--rules-file", dest="rules_file", default=_DEFAULT_RULES)
-    p_val.add_argument(
-        "--corpus-root", dest="corpus_root", default=_DEFAULT_CORPUS
-    )
-    p_val.add_argument(
-        "--strict-attribution", dest="strict_attribution", action="store_true"
-    )
+    p_val.add_argument("--corpus-root", dest="corpus_root", default=_DEFAULT_CORPUS)
+    p_val.add_argument("--strict-attribution", dest="strict_attribution", action="store_true")
     p_val.add_argument("--json", dest="json", action="store_true")
 
 
@@ -173,14 +165,8 @@ def _result_to_dict(result):  # type: ignore[no-untyped-def]
     return {
         "rule_id": result.rule_id,
         "passed": result.passed,
-        "positives": [
-            {"path": p[0], "passed": p[1], "diagnostic": p[2]}
-            for p in result.positives
-        ],
-        "negatives": [
-            {"path": n[0], "passed": n[1], "diagnostic": n[2]}
-            for n in result.negatives
-        ],
+        "positives": [{"path": p[0], "passed": p[1], "diagnostic": p[2]} for p in result.positives],
+        "negatives": [{"path": n[0], "passed": n[1], "diagnostic": n[2]} for n in result.negatives],
     }
 
 
@@ -190,13 +176,9 @@ def _cmd_test(args: argparse.Namespace) -> int:
     corpus_root = Path(args.corpus_root)
     try:
         if target.lower() == "all":
-            results = test_all_rules(
-                rules_file=rules_file, corpus_root=corpus_root
-            )
+            results = test_all_rules(rules_file=rules_file, corpus_root=corpus_root)
         else:
-            results = [
-                test_rule(target, rules_file=rules_file, corpus_root=corpus_root)
-            ]
+            results = [test_rule(target, rules_file=rules_file, corpus_root=corpus_root)]
     except (ValueError, FileNotFoundError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -225,12 +207,8 @@ def _cmd_validate(args: argparse.Namespace) -> int:
     warnings = [e for e in errors if e.severity == "warning"]
     if args.json:
         out = {
-            "errors": [
-                {"rule_id": e.rule_id, "message": e.message} for e in real_errors
-            ],
-            "warnings": [
-                {"rule_id": e.rule_id, "message": e.message} for e in warnings
-            ],
+            "errors": [{"rule_id": e.rule_id, "message": e.message} for e in real_errors],
+            "warnings": [{"rule_id": e.rule_id, "message": e.message} for e in warnings],
         }
         print(json.dumps(out, indent=2))
     else:

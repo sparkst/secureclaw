@@ -96,9 +96,12 @@ def test_attach_rule_and_dispatch_rule_exist() -> None:
 
 def test_dev_cli_imports_attach_rule_dispatch_rule_directly() -> None:
     """Verifies dev/cli.py imports attach_rule and dispatch_rule (NOT aliased)."""
-    text = Path(__file__).resolve().parent.parent.joinpath(
-        "secureclaw", "dev", "cli.py"
-    ).read_text(encoding="utf-8")
+    text = (
+        Path(__file__)
+        .resolve()
+        .parent.parent.joinpath("secureclaw", "dev", "cli.py")
+        .read_text(encoding="utf-8")
+    )
     assert "attach_rule" in text
     assert "dispatch_rule" in text
     # Forbid alias forms that PR-C's bundler bug would re-introduce.
@@ -123,9 +126,7 @@ def test_dispatch_rule_validate_strict_against_committed_rules() -> None:
     """`dev rule validate --strict-attribution` against committed rules exits
     non-zero (existing rules don't have upstream_url)."""
     parser = _build_top_parser()
-    args = parser.parse_args(
-        ["dev", "rule", "validate", "--strict-attribution"]
-    )
+    args = parser.parse_args(["dev", "rule", "validate", "--strict-attribution"])
     from secureclaw.dev.cli import cmd_dev
 
     rc = cmd_dev(args)
@@ -165,9 +166,7 @@ def test_dispatch_rule_new_refuses_duplicate(tmp_path: Path) -> None:
                         "boost_on_high_entropy": False,
                         "boost_on_invisible_chars": False,
                         "large_file_safe": False,
-                        "sources": [
-                            {"source": "own work", "license": "MIT (own work)"}
-                        ],
+                        "sources": [{"source": "own work", "license": "MIT (own work)"}],
                         "license_chain_audited": False,
                         "severity_promotion_evidence": None,
                         "owasp": None,
@@ -226,6 +225,4 @@ def test_dev_rule_validate_subprocess() -> None:
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 0, (
-        f"stdout={result.stdout!r}\nstderr={result.stderr!r}"
-    )
+    assert result.returncode == 0, f"stdout={result.stdout!r}\nstderr={result.stderr!r}"

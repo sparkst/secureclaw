@@ -51,11 +51,11 @@ def _atomic_write_json(path: Path, data: Dict[str, Any]) -> None:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(data, fh, indent=2, sort_keys=False, ensure_ascii=False)
             fh.write("\n")
-        os.replace(tmp_name, path)
+        os.replace(tmp_name, path)  # noqa: PTH105 — atomic rename per spec §13
     except BaseException:
         # Clean up the tempfile if anything went wrong before replace.
         try:
-            os.unlink(tmp_name)
+            os.unlink(tmp_name)  # noqa: PTH108 — tmp_name is a str from mkstemp
         except OSError:
             pass
         raise
@@ -183,9 +183,7 @@ def _scaffold_negative(
     dst_meta = dst_dir / f"{content_path.name}.expected.json"
 
     if dst_content.exists() or dst_meta.exists():
-        raise FileExistsError(
-            f"refusing to overwrite {dst_content} or {dst_meta}"
-        )
+        raise FileExistsError(f"refusing to overwrite {dst_content} or {dst_meta}")
 
     meta: Dict[str, Any] = {
         "schema_version": 2,
@@ -200,9 +198,7 @@ def _scaffold_negative(
     }
     schema_errors = validate_against_schema(meta)
     if schema_errors:
-        raise ValueError(
-            "negative metadata failed schema validation: " + "; ".join(schema_errors)
-        )
+        raise ValueError("negative metadata failed schema validation: " + "; ".join(schema_errors))
 
     # Copy the content file then atomically write the metadata.
     dst_content.write_bytes(content_path.read_bytes())
@@ -241,9 +237,7 @@ def scaffold_rule(
 
     # 1. id format.
     if not _PATTERN_ID_RE.match(rule_id):
-        raise ValueError(
-            f"rule_id {rule_id!r} must match ^PI-[A-Z0-9]+$"
-        )
+        raise ValueError(f"rule_id {rule_id!r} must match ^PI-[A-Z0-9]+$")
 
     # 2. Build the rule object and validate it (strict — new rules are
     #    never grandfathered).
@@ -274,9 +268,7 @@ def scaffold_rule(
     data = json.loads(rules_file.read_text(encoding="utf-8"))
     patterns = data.get("patterns", [])
     if any(p.get("id") == rule_id for p in patterns):
-        raise ValueError(
-            f"rule {rule_id!r} already exists in {rules_file}; choose a different id"
-        )
+        raise ValueError(f"rule {rule_id!r} already exists in {rules_file}; choose a different id")
 
     if dry_run:
         print(
