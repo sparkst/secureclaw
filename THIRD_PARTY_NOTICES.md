@@ -33,7 +33,7 @@ are re-derived from clean upstream sources cited in the rule's ``sources[]``.
 | Package | Version | License | Role |
 |---|---|---|---|
 | `regex` | `==2024.11.6` | Apache-2.0 | Unicode property classes + per-match timeout |
-| `send2trash` | `>=1.8,<2.0` | BSD-3-Clause | Cross-platform recoverable delete |
+| `send2trash` | `>=1.8,<3.0` | BSD-3-Clause | Cross-platform recoverable delete |
 
 ## Development Dependencies
 

@@ -85,4 +85,4 @@ def test_pyproject_pins_send2trash_range() -> None:
 
     pyproject = Path(__file__).parent.parent / "pyproject.toml"
     content = pyproject.read_text()
-    assert "send2trash>=1.8,<2.0" in content
+    assert "send2trash>=1.8,<3.0" in content
