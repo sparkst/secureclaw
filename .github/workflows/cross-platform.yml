@@ -27,7 +27,7 @@ jobs:
     name: gh-hosted ubuntu-24.04
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -45,7 +45,7 @@ jobs:
     runs-on: [self-hosted, mac-arm64-jarvis]
     if: ${{ vars.RUNNERS_REGISTERED == 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Test
         run: |
           python3 -m venv .venv
@@ -57,7 +57,7 @@ jobs:
     runs-on: [self-hosted, mac-arm64-macbook]
     if: ${{ vars.RUNNERS_REGISTERED == 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Test
         run: |
           python3 -m venv .venv
@@ -69,7 +69,7 @@ jobs:
     runs-on: [self-hosted, linux-ubuntu]
     if: ${{ vars.RUNNERS_REGISTERED == 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Test
         run: |
           python3 -m venv .venv
@@ -82,7 +82,7 @@ jobs:
     continue-on-error: true
     if: ${{ vars.RUNNERS_REGISTERED == 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Test
         run: |
           python3 -m venv .venv
